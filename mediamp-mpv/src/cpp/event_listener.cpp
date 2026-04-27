@@ -4,10 +4,8 @@
 //
 // https://github.com/open-ani/mediamp/blob/main/LICENSE
 
-#include
-"mpv_handle_t.h"
-#include
-"method_cache.h"
+#include "mpv_handle_t.h"
+#include "method_cache.h"
 
 namespace mediampv {
 
@@ -69,8 +67,7 @@ return nullptr;
 JNIEnv *env = nullptr;
 int getEnvResult = jvm_->GetEnv((void **) &env, JNI_VERSION_1_6);
 if (getEnvResult == JNI_EDETACHED) {
-#ifdef
-__ANDROID__
+#ifdef __ANDROID__
 if (jvm_->AttachCurrentThread(&env, nullptr) != JNI_OK) {
 #else
 if (jvm_->AttachCurrentThread(reinterpret_cast<void **>(&env), nullptr) != JNI_OK) {

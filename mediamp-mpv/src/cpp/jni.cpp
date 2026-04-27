@@ -4,21 +4,14 @@
 //
 // https://github.com/open-ani/mediamp/blob/main/LICENSE
 
-#include
-<iostream>
-#include
-<jni.h>
-#include
-<cstdio>
-#include
-"mpv_handle_t.h"
+#include <iostream>
+#include <jni.h>
+#include <cstdio>
+#include "mpv_handle_t.h"
 
-#define
-FN(name) Java_org_openani_mediamp_mpv_MPVHandleKt_##name
-#define
-FN_ANDROID(name) Java_org_openani_mediamp_mpv_MPVHandleAndroid_##name
-#define
-FN_DESKTOP(name) Java_org_openani_mediamp_mpv_MPVHandleDesktop_##name
+#define FN(name) Java_org_openani_mediamp_mpv_MPVHandleKt_##name
+#define FN_ANDROID(name) Java_org_openani_mediamp_mpv_MPVHandleAndroid_##name
+#define FN_DESKTOP(name) Java_org_openani_mediamp_mpv_MPVHandleDesktop_##name
 
 extern "C" {
 JNIEXPORT jboolean JNICALL FN(nGlobalInit)(JNIEnv *env, jclass clazz);
@@ -53,8 +46,7 @@ JNIEXPORT jboolean JNICALL FN(nUnobserveProperty)(JNIEnv *env, jclass clazz, jlo
 JNIEXPORT jboolean JNICALL FN_ANDROID(nAttachAndroidSurface)(JNIEnv *env, jclass clazz, jlong ptr, jobject surface);
 JNIEXPORT jboolean JNICALL FN_ANDROID(nDetachAndroidSurface)(JNIEnv *env, jclass clazz, jlong ptr);
 
-#ifdef
-_WIN32
+#ifdef _WIN32
 JNIEXPORT jboolean JNICALL FN_DESKTOP(nCreateRenderContext)(JNIEnv *env, jclass clazz, jlong ptr, jlong device_ptr, jlong context_ptr);
 JNIEXPORT jboolean JNICALL FN_DESKTOP(nDestroyRenderContext)(JNIEnv *env, jclass clazz, jlong ptr);
 JNIEXPORT jint JNICALL FN_DESKTOP(nCreateTexture)(JNIEnv *env, jclass clazz, jlong ptr, jint width, jint height);
@@ -256,8 +248,7 @@ auto* instance = reinterpret_cast<mediampv::mpv_handle_t *>(static_cast<uintptr_
 return instance->detach_android_surface(env);
 }
 
-#ifdef
-_WIN32
+#ifdef _WIN32
 
 JNIEXPORT jboolean JNICALL FN_DESKTOP(nCreateRenderContext)(JNIEnv * env, jclass clazz, jlong ptr, jlong device_ptr, jlong context_ptr) {
 auto *instance = reinterpret_cast<mediampv::mpv_handle_t *>(static_cast<uintptr_t>(ptr));

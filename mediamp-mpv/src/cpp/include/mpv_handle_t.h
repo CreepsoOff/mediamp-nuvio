@@ -8,33 +8,21 @@
 // Created by StageGuard on 12/28/2024.
 //
 
-#ifndef
-MEDIAMP_MPV_HANDLE_T_H
-#define
-MEDIAMP_MPV_HANDLE_T_H
+#ifndef MEDIAMP_MPV_HANDLE_T_H
+#define MEDIAMP_MPV_HANDLE_T_H
 
-#include
-<iostream>
-#include
-<jni.h>
-#include
-<mpv/client.h>
-#include
-<mpv/render_gl.h>
+#include <iostream>
+#include <jni.h>
+#include <mpv/client.h>
+#include <mpv/render_gl.h>
 
-#ifdef
-_WIN32
-#include
-<windows.h>
-#include
-<gl/GL.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <gl/GL.h>
 #endif
-#include
-"compatible_thread.h"
-#include
-"global_lock.h"
-#include
-"log.h"
+#include "compatible_thread.h"
+#include "global_lock.h"
+#include "log.h"
 
 namespace mediampv {
 
@@ -60,8 +48,7 @@ bool unobserve_property(uint64_t reply_data);
 bool attach_android_surface(JNIEnv *env, jobject surface);
 bool detach_android_surface(JNIEnv *env);
 
-#ifdef
-__ANDROID__
+#ifdef __ANDROID__
 bool attach_window_surface(int64_t wid);
 bool detach_window_surface();
 #endif
@@ -81,14 +68,12 @@ mpv_handle *handle_;
 
 jobject *event_listener_ = nullptr;
 
-#ifdef
-__ANDROID__
+#ifdef __ANDROID__
 bool surface_attached_ = false;
 jobject surface_;
 #endif
 
-#ifdef
-WIN32
+#ifdef WIN32
 mpv_render_context *render_context_ = nullptr;
 HGLRC context_ = nullptr;
 HDC device_ = nullptr;

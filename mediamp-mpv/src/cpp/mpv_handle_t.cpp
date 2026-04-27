@@ -4,60 +4,41 @@
 //
 // https://github.com/open-ani/mediamp/blob/main/LICENSE
 
-#include
-<iostream>
-#include
-"mpv_handle_t.h"
-#include
-"method_cache.h"
-#include
-"compatible_thread.h"
-#include
-"global_lock.h"
-#include
-<mpv/render_gl.h>
+#include <iostream>
+#include "mpv_handle_t.h"
+#include "method_cache.h"
+#include "compatible_thread.h"
+#include "global_lock.h"
+#include <mpv/render_gl.h>
 
-#ifdef
-_WIN32
-#include
-<windows.h>
-#include
-<gl/GL.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <gl/GL.h>
 #endif
 
 extern "C" {
-#include
-<libavcodec/jni.h>
+#include <libavcodec/jni.h>
 }
 
-#define
-CHECK_HANDLE() if (!handle_) {
-\
+#define CHECK_HANDLE() if (!handle_) { \
     LOG("mpv handle is not created when %s", __FUNCTION__); \
     return false; \
 }
-#define
-CHECK_HANDLE_RETURN_INT() if (!handle_) {
-\
+#define CHECK_HANDLE_RETURN_INT() if (!handle_) { \
     LOG("mpv handle is not created when %s", __FUNCTION__); \
     return 0; \
 }
 
 namespace mediampv {
 
-#ifdef
-_WIN32
+#ifdef _WIN32
 bool release_texture_impl(GLuint* texture_id, GLuint* framebuffer_object);
 static void* get_proc_address_mpv(void* ctx, const char* name);
 
-#define
-GL_FRAMEBUFFER            0x8D40
-#define
-GL_COLOR_ATTACHMENT0      0x8CE0
-#define
-GL_RGBA8                  0x8058
-#define
-GL_FRAMEBUFFER_COMPLETE   0x8CD5
+#define GL_FRAMEBUFFER            0x8D40
+#define GL_COLOR_ATTACHMENT0      0x8CE0
+#define GL_RGBA8                  0x8058
+#define GL_FRAMEBUFFER_COMPLETE   0x8CD5
 typedef void (APIENTRY *PFNGLGENFRAMEBUFFERSPROC)(GLsizei n, GLuint *framebuffers);
 typedef void (APIENTRY *PFNGLBINDFRAMEBUFFERPROC)(GLenum target, GLuint framebuffer);
 typedef void (APIENTRY *PFNGLFRAMEBUFFERTEXTURE2DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
@@ -194,8 +175,7 @@ FP;
 LOCK(surface_access_lock);
 CHECK_HANDLE()
 
-#ifdef
-__ANDROID__
+#ifdef __ANDROID__
 if (surface_attached_) detach_android_surface(env);
 if (env->IsInstanceOf(surface, mediampv::jni_mediamp_clazz_android_Surface) != JNI_TRUE) {
 LOG("surface is not instance of android.view.Surface");
@@ -219,8 +199,7 @@ FP;
 LOCK(surface_access_lock);
 CHECK_HANDLE()
 
-#ifdef
-__ANDROID__
+#ifdef __ANDROID__
 if (!surface_attached_) return false;
 
 int64_t wid = 0;
@@ -235,8 +214,7 @@ return false;
 #endif
 }
 
-#ifdef
-__ANDROID__
+#ifdef __ANDROID__
 bool mpv_handle_t::attach_window_surface(int64_t wid) {
 FP;
 CHECK_HANDLE();
@@ -255,8 +233,7 @@ bool mpv_handle_t::create_render_context(HDC device, HGLRC context) {
 FP;
 CHECK_HANDLE()
 
-#ifdef
-_WIN32
+#ifdef _WIN32
 if (render_context_)
 return true;
 
@@ -302,8 +279,7 @@ return false;
 #endif
 }
 
-#ifdef
-_WIN32
+#ifdef _WIN32
 static void* get_proc_address_mpv(void* ctx, const char* name) {
 void* addr = (void*)wglGetProcAddress(name);
 if (addr == nullptr || (reinterpret_cast<intptr_t>(addr) >= -1 && reinterpret_cast<intptr_t>(addr) <= 3)) {

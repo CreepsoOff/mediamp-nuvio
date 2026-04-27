@@ -141,7 +141,7 @@ val configureCMakeDesktop = tasks.register("configureCMakeDesktop", Exec::class.
         return this.replace("\\", "/").trim()
     }
 
-    val buildType = getPropertyOrNull("CMAKE_BUILD_TYPE") ?: "Debug"
+    val buildType = getPropertyOrNull("CMAKE_BUILD_TYPE") ?: "Release"
     check(buildType == "Debug" || buildType == "Release" || buildType == "RelWithDebInfo" || buildType == "MinSizeRel") {
         "Invalid build type: '$buildType'. Supported: Debug, Release, RelWithDebInfo, MinSizeRel"
     }
@@ -178,7 +178,7 @@ val buildCMakeDesktop = tasks.register("buildCMakeDesktop", Exec::class.java) {
 
     val cmake = getPropertyOrNull("CMAKE") ?: "cmake"
     val isWindows = getOs() == Os.Windows
-    val buildType = getPropertyOrNull("CMAKE_BUILD_TYPE") ?: "Debug"
+    val buildType = getPropertyOrNull("CMAKE_BUILD_TYPE") ?: "Release"
 
     inputs.file(projectDir.resolve("CMakeLists.txt"))
     inputs.dir(projectDir.resolve("src/cpp/include"))
@@ -208,7 +208,7 @@ val nativeJarForCurrentPlatform = tasks.register("nativeJarForCurrentPlatform", 
     group = "mediamp"
     description = "Create a jar for the native files for current platform"
 
-    val buildType = getPropertyOrNull("CMAKE_BUILD_TYPE") ?: "Debug"
+    val buildType = getPropertyOrNull("CMAKE_BUILD_TYPE") ?: "Release"
     archiveClassifier.set(getOsTriple())
 
     when (getOs()) {
@@ -227,9 +227,12 @@ val nativeJarForCurrentPlatform = tasks.register("nativeJarForCurrentPlatform", 
         }
 
         Os.Windows -> {
-            // build-ci/Debug/mediampv.dll
-            // build-ci/Debug/*.dll
-            from(buildCMakeDesktop.map { it.outputs.files.singleFile.resolve(buildType).listFiles().orEmpty() })
+            // Ninja places release DLLs in build-ci; multi-config generators may use build-ci/Release.
+            from(buildCMakeDesktop.map { task ->
+                val buildDir = task.outputs.files.singleFile
+                buildDir.listFiles { file -> file.extension.equals("dll", ignoreCase = true) }.orEmpty().toList() +
+                    buildDir.resolve(buildType).listFiles { file -> file.extension.equals("dll", ignoreCase = true) }.orEmpty().toList()
+            })
         }
 
         else -> {}
