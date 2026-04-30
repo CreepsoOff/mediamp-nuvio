@@ -404,6 +404,12 @@ wglMakeCurrent(old_dc, old_ctx);
 return false;
 }
 
+// On resize, viewport can stay stale from previous dimensions on some drivers.
+// Always force it to current render target size before asking mpv to render.
+glViewport(0, 0, width_, height_);
+glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+glClear(GL_COLOR_BUFFER_BIT);
+
 mpv_opengl_fbo fbo_params{
 static_cast<int>(fbo_), width_, height_, GL_RGBA8
 };
