@@ -61,6 +61,8 @@ GLuint create_texture(int width, int height);
 bool release_texture();
 
 bool render_frame();
+bool debug_render_solid(float red, float green, float blue, float alpha);
+std::string read_texture_stats();
 
 private:
 JavaVM *jvm_;

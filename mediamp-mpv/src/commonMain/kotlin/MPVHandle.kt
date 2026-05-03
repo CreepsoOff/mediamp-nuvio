@@ -168,3 +168,13 @@ internal expect fun releaseTexture(ptr: Long): Boolean
  * Desktop only
  */
 internal expect fun renderFrameToTexture(ptr: Long): Boolean
+
+/**
+ * Desktop debug only.
+ */
+internal expect fun debugRenderSolid(ptr: Long, red: Float, green: Float, blue: Float, alpha: Float): Boolean
+
+/**
+ * Desktop debug only.
+ */
+internal expect fun readTextureStats(ptr: Long): String

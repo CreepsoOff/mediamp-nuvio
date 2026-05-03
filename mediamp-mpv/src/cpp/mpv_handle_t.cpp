@@ -5,6 +5,8 @@
 // https://github.com/open-ani/mediamp/blob/main/LICENSE
 
 #include <iostream>
+#include <sstream>
+#include <vector>
 #include "mpv_handle_t.h"
 #include "method_cache.h"
 #include "compatible_thread.h"
@@ -318,31 +320,50 @@ LOCK(texture_lock);
 
 HDC old_dc = wglGetCurrentDC();
 HGLRC old_ctx = wglGetCurrentContext();
-wglMakeCurrent(device_, context_);
-
-if (texture_ != GL_ZERO && fbo_ != GL_ZERO) {
-width_ = 0;
-height_ = 0;
-release_texture_impl(&texture_, &fbo_);
+if (!wglMakeCurrent(device_, context_)) {
+LOG("Failed to make OpenGL context current in create_texture");
+return 0;
 }
 
-glGenTextures(1, &texture_);
-glBindTexture(GL_TEXTURE_2D, texture_);
+GLuint old_texture = texture_;
+GLuint old_fbo = fbo_;
+GLuint new_texture = GL_ZERO;
+GLuint new_fbo = GL_ZERO;
+
+glGenTextures(1, &new_texture);
+glBindTexture(GL_TEXTURE_2D, new_texture);
 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-pfnGlGenFramebuffers(1, &fbo_);
-pfnGlBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+pfnGlGenFramebuffers(1, &new_fbo);
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, new_fbo);
 pfnGlFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-GL_TEXTURE_2D, texture_, 0);
+GL_TEXTURE_2D, new_texture, 0);
 
+GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
+if (status != GL_FRAMEBUFFER_COMPLETE) {
+LOG("Framebuffer not complete in create_texture: 0x%x", status);
+release_texture_impl(&new_texture, &new_fbo);
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
 wglMakeCurrent(old_dc, old_ctx);
+return 0;
+}
+
+texture_ = new_texture;
+fbo_ = new_fbo;
 
 width_ = width;
 height_ = height;
+
+if (old_texture != GL_ZERO && old_fbo != GL_ZERO) {
+release_texture_impl(&old_texture, &old_fbo);
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+wglMakeCurrent(old_dc, old_ctx);
 
 return texture_;
 }
@@ -435,6 +456,92 @@ glFinish();
 wglMakeCurrent(old_dc, old_ctx);
 
 return render_result >= 0;
+}
+
+bool mpv_handle_t::debug_render_solid(float red, float green, float blue, float alpha) {
+CHECK_HANDLE()
+LOCK(texture_lock);
+
+if (!context_ || !device_ || !fbo_ || !texture_ || !width_ || !height_)
+return false;
+
+HDC old_dc = wglGetCurrentDC();
+HGLRC old_ctx = wglGetCurrentContext();
+if (!wglMakeCurrent(device_, context_)) {
+LOG("Failed to make OpenGL context current in debug_render_solid");
+return false;
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
+if (status != GL_FRAMEBUFFER_COMPLETE) {
+LOG("Framebuffer not complete in debug_render_solid: 0x%x", status);
+wglMakeCurrent(old_dc, old_ctx);
+return false;
+}
+
+glViewport(0, 0, width_, height_);
+glClearColor(red, green, blue, alpha);
+glClear(GL_COLOR_BUFFER_BIT);
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+glFinish();
+wglMakeCurrent(old_dc, old_ctx);
+
+return true;
+}
+
+std::string mpv_handle_t::read_texture_stats() {
+LOCK(texture_lock);
+
+if (!context_ || !device_ || !fbo_ || !texture_ || !width_ || !height_)
+return "unavailable";
+
+HDC old_dc = wglGetCurrentDC();
+HGLRC old_ctx = wglGetCurrentContext();
+if (!wglMakeCurrent(device_, context_)) {
+return "wglMakeCurrent=false";
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
+if (status != GL_FRAMEBUFFER_COMPLETE) {
+std::ostringstream failed;
+failed << "fboStatus=0x" << std::hex << status;
+wglMakeCurrent(old_dc, old_ctx);
+return failed.str();
+}
+
+int sample_width = width_ < 64 ? width_ : 64;
+int sample_height = height_ < 64 ? height_ : 64;
+std::vector<unsigned char> pixels(sample_width * sample_height * 4);
+glReadPixels(0, 0, sample_width, sample_height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+long long sum_r = 0;
+long long sum_g = 0;
+long long sum_b = 0;
+long long non_black = 0;
+for (int i = 0; i < sample_width * sample_height; ++i) {
+unsigned char r = pixels[i * 4];
+unsigned char g = pixels[i * 4 + 1];
+unsigned char b = pixels[i * 4 + 2];
+sum_r += r;
+sum_g += g;
+sum_b += b;
+if (r > 3 || g > 3 || b > 3) {
+non_black++;
+}
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+wglMakeCurrent(old_dc, old_ctx);
+
+int count = sample_width * sample_height;
+std::ostringstream result;
+result << "size=" << width_ << "x" << height_
+<< " sample=" << sample_width << "x" << sample_height
+<< " avgRgb=" << (sum_r / count) << "," << (sum_g / count) << "," << (sum_b / count)
+<< " nonBlack=" << non_black << "/" << count;
+return result.str();
 }
 
 bool mpv_handle_t::destroy(JNIEnv *env) {

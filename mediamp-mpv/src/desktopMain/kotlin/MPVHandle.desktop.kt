@@ -26,6 +26,12 @@ external fun nReleaseTexture(ptr: Long): Boolean
 @InternalMediampApi
 external fun nRenderFrameToTexture(ptr: Long): Boolean
 
+@InternalMediampApi
+external fun nDebugRenderSolid(ptr: Long, red: Float, green: Float, blue: Float, alpha: Float): Boolean
+
+@InternalMediampApi
+external fun nReadTextureStats(ptr: Long): String
+
 @OptIn(InternalMediampApi::class)
 internal actual fun attachSurface(ptr: Long, surface: Any): Boolean {
     error("only implemented on Android")
@@ -59,4 +65,14 @@ actual fun releaseTexture(ptr: Long): Boolean {
 @OptIn(InternalMediampApi::class)
 actual fun renderFrameToTexture(ptr: Long): Boolean {
     return nRenderFrameToTexture(ptr)
+}
+
+@OptIn(InternalMediampApi::class)
+actual fun debugRenderSolid(ptr: Long, red: Float, green: Float, blue: Float, alpha: Float): Boolean {
+    return nDebugRenderSolid(ptr, red, green, blue, alpha)
+}
+
+@OptIn(InternalMediampApi::class)
+actual fun readTextureStats(ptr: Long): String {
+    return nReadTextureStats(ptr)
 }

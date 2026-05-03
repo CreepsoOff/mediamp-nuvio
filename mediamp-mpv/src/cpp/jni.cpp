@@ -52,6 +52,8 @@ JNIEXPORT jboolean JNICALL FN_DESKTOP(nDestroyRenderContext)(JNIEnv *env, jclass
 JNIEXPORT jint JNICALL FN_DESKTOP(nCreateTexture)(JNIEnv *env, jclass clazz, jlong ptr, jint width, jint height);
 JNIEXPORT jboolean JNICALL FN_DESKTOP(nReleaseTexture)(JNIEnv *env, jclass clazz, jlong ptr);
 JNIEXPORT jboolean JNICALL FN_DESKTOP(nRenderFrameToTexture)(JNIEnv *env, jclass clazz, jlong ptr);
+JNIEXPORT jboolean JNICALL FN_DESKTOP(nDebugRenderSolid)(JNIEnv *env, jclass clazz, jlong ptr, jfloat red, jfloat green, jfloat blue, jfloat alpha);
+JNIEXPORT jstring JNICALL FN_DESKTOP(nReadTextureStats)(JNIEnv *env, jclass clazz, jlong ptr);
 #endif
 
 /**
@@ -128,12 +130,12 @@ JNIEXPORT jint JNICALL FN(nGetPropertyInt)(JNIEnv *env, jclass clazz, jlong ptr,
 auto* instance = reinterpret_cast<mediampv::mpv_handle_t *>(static_cast<uintptr_t>(ptr));
 
 const char *key_char = env->GetStringUTFChars(key, nullptr);
-int result = 0;
+int64_t result = 0;
 
 instance->get_property(key_char, MPV_FORMAT_INT64, &result);
 env->ReleaseStringUTFChars(key, key_char);
 
-return result;
+return static_cast<jint>(result);
 }
 
 JNIEXPORT jdouble JNICALL FN(nGetPropertyDouble)(JNIEnv *env, jclass clazz, jlong ptr, jstring key) {
@@ -169,8 +171,10 @@ char *result = nullptr;
 instance->get_property(key_char, MPV_FORMAT_STRING, &result);
 env->ReleaseStringUTFChars(key, key_char);
 
-jstring jresult = env->NewStringUTF(result);
+jstring jresult = env->NewStringUTF(result ? result : "");
+if (result) {
 mpv_free(result); // TODO: move to mpv_handle_t
+}
 
 return jresult;
 }
@@ -275,6 +279,17 @@ return instance->release_texture();
 JNIEXPORT jboolean JNICALL FN_DESKTOP(nRenderFrameToTexture)(JNIEnv * env, jclass clazz, jlong ptr) {
 auto *instance = reinterpret_cast<mediampv::mpv_handle_t *>(static_cast<uintptr_t>(ptr));
 return instance->render_frame();
+}
+
+JNIEXPORT jboolean JNICALL FN_DESKTOP(nDebugRenderSolid)(JNIEnv * env, jclass clazz, jlong ptr, jfloat red, jfloat green, jfloat blue, jfloat alpha) {
+auto *instance = reinterpret_cast<mediampv::mpv_handle_t *>(static_cast<uintptr_t>(ptr));
+return instance->debug_render_solid(red, green, blue, alpha);
+}
+
+JNIEXPORT jstring JNICALL FN_DESKTOP(nReadTextureStats)(JNIEnv * env, jclass clazz, jlong ptr) {
+auto *instance = reinterpret_cast<mediampv::mpv_handle_t *>(static_cast<uintptr_t>(ptr));
+std::string stats = instance->read_texture_stats();
+return env->NewStringUTF(stats.c_str());
 }
 
 #endif

@@ -123,6 +123,16 @@ actual class MpvMediampPlayer(
         return renderFrameToTexture(handle.ptr)
     }
 
+    @InternalMediampApi
+    fun debugRenderSolid(red: Float, green: Float, blue: Float, alpha: Float): Boolean {
+        return debugRenderSolid(handle.ptr, red, green, blue, alpha)
+    }
+
+    @InternalMediampApi
+    fun readTextureStats(): String {
+        return readTextureStats(handle.ptr)
+    }
+
     init {
         handle.setEventListener(eventListener)
 
