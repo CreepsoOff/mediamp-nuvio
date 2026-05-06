@@ -10,6 +10,7 @@
 package org.openani.mediamp.mpv.compose
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.awt.SwingPanel
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.window.LocalWindow
 import org.jetbrains.skia.BackendTexture
@@ -30,6 +33,10 @@ import org.openani.mediamp.InternalMediampApi
 import org.openani.mediamp.mpv.MpvMediampPlayer
 import org.openani.mediamp.mpv.utils.OpenGLComponentProvider
 import org.openani.mediamp.mpv.utils.findSkiaLayer
+import java.awt.Canvas as AwtCanvas
+import java.awt.Color as AwtColor
+import javax.swing.JPanel
+import java.awt.BorderLayout
 
 @OptIn(InternalMediampApi::class)
 @Composable
@@ -42,6 +49,111 @@ actual fun MpvMediampPlayerSurface(
         window.findSkiaLayer()?.let { OpenGLComponentProvider.createOrNull(it) }
     }
 
+    val isLinux = remember {
+        System.getProperty("os.name")?.lowercase()?.contains("linux") == true
+    }
+
+    if (components == null && isLinux) {
+        LinuxEmbeddedMpvSurface(player = player, modifier = modifier)
+        return
+    }
+
+    GlBasedMpvSurface(player = player, modifier = modifier, components = components)
+}
+
+@OptIn(InternalMediampApi::class)
+@Composable
+private fun LinuxEmbeddedMpvSurface(
+    player: MpvMediampPlayer,
+    modifier: Modifier,
+) {
+    var windowId by remember(player) { mutableStateOf<Long?>(null) }
+    var attached by remember(player) { mutableStateOf(false) }
+
+    SwingPanel(
+        modifier = modifier.fillMaxSize(),
+        background = Color.Black,
+        factory = {
+            val panel = JPanel(BorderLayout()).apply {
+                background = AwtColor.BLACK
+                isOpaque = true
+            }
+            val canvas = AwtCanvas().apply {
+                background = AwtColor.BLACK
+            }
+            panel.add(canvas, BorderLayout.CENTER)
+            panel.addHierarchyListener {
+                if (canvas.isDisplayable && !attached) {
+                    try {
+                        val peer = canvas::class.java.getMethod("getPeer")
+                            .also { it.isAccessible = true }
+                            .invoke(canvas)
+                        if (peer != null) {
+                            val getWindow = peer::class.java.getMethod("getWindow")
+                                .also { it.isAccessible = true }
+                            val xWindow = getWindow.invoke(peer) as? Long
+                            if (xWindow != null && xWindow != 0L) {
+                                windowId = xWindow
+                            }
+                        }
+                    } catch (_: Exception) {
+                        // Try ComponentPeer approach for newer JDKs
+                        try {
+                            val peerField = java.awt.Component::class.java
+                                .getDeclaredField("peer")
+                                .also { it.isAccessible = true }
+                            val peer = peerField.get(canvas)
+                            if (peer != null) {
+                                val targetField = peer::class.java
+                                    .getDeclaredField("target")
+                                val getTargetMethod = peer::class.java.methods
+                                    .firstOrNull { it.name == "getWindow" || it.name == "getContentWindow" }
+                                if (getTargetMethod != null) {
+                                    getTargetMethod.isAccessible = true
+                                    val xid = getTargetMethod.invoke(peer) as? Long
+                                    if (xid != null && xid != 0L) {
+                                        windowId = xid
+                                    }
+                                }
+                            }
+                        } catch (_: Exception) {}
+                    }
+                }
+            }
+            panel
+        },
+    )
+
+    LaunchedEffect(windowId, player) {
+        val wid = windowId ?: return@LaunchedEffect
+        if (!attached) {
+            attached = true
+            runCatching {
+                player.impl.option("vo", "x11,gpu,libmpv")
+                player.impl.option("wid", wid.toString())
+            }.onFailure {
+                println("MPV_DESKTOP_SURFACE LinuxEmbedded wid set failed: ${it.message}")
+            }
+        }
+    }
+
+    DisposableEffect(player) {
+        onDispose {
+            attached = false
+            runCatching {
+                player.impl.option("wid", "0")
+            }
+        }
+    }
+}
+
+@OptIn(InternalMediampApi::class)
+@Composable
+private fun GlBasedMpvSurface(
+    player: MpvMediampPlayer,
+    modifier: Modifier,
+    components: OpenGLComponentProvider?,
+) {
     var textureId by remember(player) { mutableIntStateOf(0) }
     var renderContextInitialized by remember(player) { mutableStateOf(false) }
     var lastContextSignature by remember(player) { mutableStateOf<String?>(null) }
@@ -127,28 +239,14 @@ actual fun MpvMediampPlayerSurface(
         return contextCreated
     }
 
-    // Bind the render context to BOTH the GL components and the player. When
-    // the upstream wrapper recreates the player (source / episode switch keyed
-    // on the stream identity) the components instance can be the same window,
-    // so keying only on `components` would skip the render-context creation
-    // for the new player and leave it rendering nowhere. Keying on the player
-    // ensures every fresh MpvMediampPlayer gets its own render context bound
-    // to the current SkiaLayer GL device/context.
     DisposableEffect(components, player) {
         if (components == null) return@DisposableEffect onDispose { }
 
-        // Try early, but do not make this one-shot. During Windows window
-        // creation/resizes Skiko's GL handles can be temporarily unusable; the
-        // Canvas path below retries instead of leaving a permanent black layer.
         createRenderContextIfNeeded(components)
 
         onDispose {
             releaseTextureResources()
             player.releaseRenderContext()
-            // Tell Skia to forget any GL state it captured while this player
-            // owned the render context. The next player on the same window
-            // will start from a clean cache instead of inheriting stale FBO /
-            // texture bindings from this disposed player.
             runCatching { components.directContext.resetGLAll() }
             renderContextInitialized = false
             lastContextSignature = null
@@ -206,16 +304,7 @@ actual fun MpvMediampPlayerSurface(
                 lastLoggedSurfaceSize = surfaceSizeKey
             }
 
-            // Close Skia's wrappers before replacing the native GL texture, but
-            // do not delete the old native texture here. Native createTexture()
-            // allocates the replacement first and deletes the old texture only
-            // after the new FBO is valid, preventing GL from immediately
-            // recycling the same texture ID under Skia's cache.
             releaseSkiaTextureResources()
-
-            // Keep libmpv's render context alive on normal size changes. The
-            // render API documents that freeing an active render context
-            // disables video; resize only needs a fresh GL render target.
             runCatching { components.directContext.resetGLAll() }
 
             val newTextureId = player.createTexture(targetWidth, targetHeight)
@@ -265,8 +354,6 @@ actual fun MpvMediampPlayerSurface(
                     }
                 }
             } else {
-                // Texture creation failed — leave currentSize null so the next
-                // frame retries instead of getting stuck rendering nothing.
                 player.currentSize = null
                 logSurface(
                     "textureCreateFailed size=$surfaceSizeKey signature=$currentContextSignature " +
