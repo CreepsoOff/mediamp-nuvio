@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.nativeCanvas
@@ -25,11 +26,13 @@ import androidx.compose.ui.window.LocalWindow
 import org.jetbrains.skia.BackendTexture
 import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.Image
+import org.jetbrains.skia.Rect
 import org.jetbrains.skia.SurfaceOrigin
 import org.openani.mediamp.InternalMediampApi
 import org.openani.mediamp.mpv.MpvMediampPlayer
 import org.openani.mediamp.mpv.utils.OpenGLComponentProvider
 import org.openani.mediamp.mpv.utils.findSkiaLayer
+import kotlin.math.roundToInt
 
 @OptIn(InternalMediampApi::class)
 @Composable
@@ -166,9 +169,13 @@ actual fun MpvMediampPlayerSurface(
         if (components == null) return@Canvas
         val skiaCanvas = drawContext.canvas.nativeCanvas
         val currentContextSignature = components.contextSignature
-        val targetWidth = size.width.toInt()
-        val targetHeight = size.height.toInt()
-        val surfaceSizeKey = "${targetWidth}x$targetHeight"
+        val contentScale = components.contentScale.takeIf { it.isFinite() && it > 0f } ?: 1f
+        val logicalWidth = size.width
+        val logicalHeight = size.height
+        val targetWidth = (logicalWidth * contentScale).roundToInt()
+        val targetHeight = (logicalHeight * contentScale).roundToInt()
+        val physicalSize = Size(targetWidth.toFloat(), targetHeight.toFloat())
+        val surfaceSizeKey = "${logicalWidth.roundToInt()}x${logicalHeight.roundToInt()}@${contentScale}=${targetWidth}x$targetHeight"
 
         if (!renderContextInitialized) {
             if (!createRenderContextIfNeeded(components)) return@Canvas
@@ -185,7 +192,7 @@ actual fun MpvMediampPlayerSurface(
             lastContextSignature = currentContextSignature
         }
 
-        if (player.currentSize == null || player.currentSize != size || textureId == 0) {
+        if (player.currentSize == null || player.currentSize != physicalSize || textureId == 0) {
             if (targetWidth <= 0 || targetHeight <= 0) {
                 if (lastLoggedSurfaceSize != surfaceSizeKey) {
                     logSurface(
@@ -200,7 +207,7 @@ actual fun MpvMediampPlayerSurface(
             if (lastLoggedSurfaceSize != surfaceSizeKey) {
                 logSurface(
                     "surfaceSizeChanged size=$surfaceSizeKey previous=$previousSize " +
-                        "textureId=$textureId signature=$currentContextSignature " +
+                        "textureId=$textureId dpi=${components.currentDpi} signature=$currentContextSignature " +
                         "player=${System.identityHashCode(player)}",
                 )
                 lastLoggedSurfaceSize = surfaceSizeKey
@@ -254,10 +261,10 @@ actual fun MpvMediampPlayerSurface(
                         )
                     } else {
                         textureId = newTextureId
-                        player.currentSize = size
+                        player.currentSize = physicalSize
                         if (lastLoggedTextureSize != surfaceSizeKey) {
                             logSurface(
-                                "textureAllocated size=$surfaceSizeKey texture=$textureId " +
+                                "textureAllocated size=$surfaceSizeKey dpi=${components.currentDpi} texture=$textureId " +
                                     "signature=$currentContextSignature player=${System.identityHashCode(player)}",
                             )
                             lastLoggedTextureSize = surfaceSizeKey
@@ -324,7 +331,7 @@ actual fun MpvMediampPlayerSurface(
             runCatching { components.directContext.resetGLAll() }
         }
         player.image?.let {
-            skiaCanvas.drawImage(it, 0f, 0f)
+            skiaCanvas.drawImageRect(it, Rect.makeWH(logicalWidth, logicalHeight))
         }
     }
 }

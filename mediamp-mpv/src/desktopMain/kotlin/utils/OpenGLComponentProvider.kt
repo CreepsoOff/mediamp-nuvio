@@ -15,7 +15,7 @@ import org.jetbrains.skiko.context.ContextHandler
 import org.jetbrains.skiko.context.OpenGLContextHandler
 import org.jetbrains.skiko.redrawer.WindowsOpenGLRedrawer
 
-class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
+class OpenGLComponentProvider(private val skiaLayer: SkiaLayer) {
     private val openglRedrawer: WindowsOpenGLRedrawer = skiaLayer.redrawer as WindowsOpenGLRedrawer
 
     private val deviceHandleField = WindowsOpenGLRedrawer::class.java
@@ -36,6 +36,8 @@ class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
     val glDevice: Long get() = deviceHandleField.getLong(openglRedrawer)
     val glContext: Long get() = glContextHandleField.getLong(openglRedrawer)
     val contextSignature: String get() = "$glDevice:$glContext"
+    val contentScale: Float get() = skiaLayer.contentScale
+    val currentDpi: Int get() = skiaLayer.currentDPI
 
     val directContext: DirectContext
         get() = (contextHandlerHandleField.get(openglRedrawer) as OpenGLContextHandler)
