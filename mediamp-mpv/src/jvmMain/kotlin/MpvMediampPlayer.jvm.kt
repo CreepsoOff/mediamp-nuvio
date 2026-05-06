@@ -142,6 +142,8 @@ actual class MpvMediampPlayer(
         // handle.option("icc-cache-dir", File(cacheDir, "mpv_icc_cache").absolutePath)
         handle.option("profile", "fast")
 
+        var hardwareDecoderCodecs = "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1"
+
         when (currentPlatform()) {
             is Platform.Android -> {
                 handle.option("gpu-context", "android")
@@ -158,6 +160,11 @@ actual class MpvMediampPlayer(
                 handle.option("vo", "libmpv")
                 handle.option("fbo-format", "rgba8")
                 handle.option("dither-depth", "no")
+                // Some Windows GPU/driver combinations corrupt HEVC Main10
+                // frames when libmpv renders hardware-decoded frames into the
+                // OpenGL FBO used by Compose. Let mpv software-decode HEVC on
+                // Windows while preserving hardware decode for other codecs.
+                hardwareDecoderCodecs = "h264,mpeg4,mpeg2video,vp8,vp9,av1"
             }
 
             is Platform.MacOS -> {
@@ -172,7 +179,7 @@ actual class MpvMediampPlayer(
 
 
         handle.option("hwdec", "auto")
-        handle.option("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
+        handle.option("hwdec-codecs", hardwareDecoderCodecs)
         // handle.option("tls-verify", "yes")
         // handle.option("tls-ca-file", "${this.context.filesDir.path}/cacert.pem")
         handle.option("input-default-bindings", "yes")
