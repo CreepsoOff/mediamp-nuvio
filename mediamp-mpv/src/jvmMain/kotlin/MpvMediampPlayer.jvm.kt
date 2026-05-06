@@ -168,8 +168,9 @@ actual class MpvMediampPlayer(
             }
 
             is Platform.Linux -> {
-                handle.option("ao", "pulse,alsa")
-                handle.option("vo", "gpu,x11,libmpv")
+                handle.option("ao", "pulse,alsa,null")
+                handle.option("vo", "libmpv,gpu,x11,null")
+                handle.option("gpu-context", "auto")
             }
 
             else -> {}
