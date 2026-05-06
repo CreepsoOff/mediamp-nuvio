@@ -31,10 +31,34 @@ private:
 #define LOCK(lock_name) LockGuard guard_##lock_name(lock_name)
 
 #else
-#include <mutex>
+#include <pthread.h>
 
-#define CREATE_LOCK(lock_name) std::recursive_mutex lock_name
-#define LOCK(lock_name) std::lock_guard<std::recursive_mutex> guard_##lock_name(lock_name)
+class PthreadRecursiveLock {
+public:
+    PthreadRecursiveLock() {
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&mutex_, &attr);
+        pthread_mutexattr_destroy(&attr);
+    }
+    ~PthreadRecursiveLock() { pthread_mutex_destroy(&mutex_); }
+    void lock() { pthread_mutex_lock(&mutex_); }
+    void unlock() { pthread_mutex_unlock(&mutex_); }
+private:
+    pthread_mutex_t mutex_;
+};
+
+class PthreadLockGuard {
+public:
+    PthreadLockGuard(PthreadRecursiveLock& lock) : lock_(lock) { lock_.lock(); }
+    ~PthreadLockGuard() { lock_.unlock(); }
+private:
+    PthreadRecursiveLock& lock_;
+};
+
+#define CREATE_LOCK(lock_name) PthreadRecursiveLock lock_name
+#define LOCK(lock_name) PthreadLockGuard guard_##lock_name(lock_name)
 
 #endif
 
