@@ -39,7 +39,7 @@ actual fun MpvMediampPlayerSurface(
 ) {
     val window = LocalWindow.current as ComposeWindow
     val components = remember(window) {
-        window.findSkiaLayer()?.let { OpenGLComponentProvider(it) }
+        window.findSkiaLayer()?.let { OpenGLComponentProvider.createOrNull(it) }
     }
 
     var textureId by remember(player) { mutableIntStateOf(0) }

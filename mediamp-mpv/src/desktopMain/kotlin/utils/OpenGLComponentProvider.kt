@@ -19,11 +19,11 @@ class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
 
     private val isWindows = System.getProperty("os.name")?.contains("Windows", ignoreCase = true) == true
 
-    private val deviceHandleField = redrawer::class.java
-        .getDeclaredField("device")
-        .also { it.isAccessible = true }
+    private val deviceHandleField: java.lang.reflect.Field? = runCatching {
+        redrawer::class.java.getDeclaredField("device").also { it.isAccessible = true }
+    }.getOrNull()
 
-    private val glContextHandleField = redrawer::class.java
+    private val glContextHandleField: java.lang.reflect.Field = redrawer::class.java
         .getDeclaredField("context")
         .also { it.isAccessible = true }
 
@@ -34,11 +34,17 @@ class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
         .getDeclaredField("context")
         .also { it.isAccessible = true }
 
-    val glDevice: Long get() = deviceHandleField.getLong(redrawer)
+    val glDevice: Long get() = deviceHandleField?.getLong(redrawer) ?: 0L
     val glContext: Long get() = glContextHandleField.getLong(redrawer)
     val contextSignature: String get() = "$glDevice:$glContext"
 
     val directContext: DirectContext
         get() = (contextHandlerHandleField.get(redrawer) as OpenGLContextHandler)
             .let { directContextHandler.get(it) as DirectContext }
+
+    companion object {
+        fun createOrNull(skiaLayer: SkiaLayer): OpenGLComponentProvider? = runCatching {
+            OpenGLComponentProvider(skiaLayer)
+        }.getOrNull()
+    }
 }
