@@ -13,7 +13,8 @@ import org.openani.mediamp.internal.currentPlatform
 
 object LibraryLoader {
     fun loadLibraries() {
-        if (currentPlatform() is Platform.Android || currentPlatform() is Platform.Windows) {
+        val platform = currentPlatform()
+        if (platform is Platform.Android || platform is Platform.Windows || platform is Platform.Linux) {
             System.loadLibrary("mediampv")
         }
     }

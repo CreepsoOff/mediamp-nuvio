@@ -16,6 +16,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <gl/GL.h>
+#elif defined(__linux__) && !defined(__ANDROID__)
+#include <GL/gl.h>
+#include <GL/glx.h>
+#include <dlfcn.h>
 #endif
 
 extern "C" {
@@ -33,14 +37,23 @@ extern "C" {
 
 namespace mediampv {
 
-#ifdef _WIN32
+#if defined(_WIN32) || (defined(__linux__) && !defined(__ANDROID__))
 bool release_texture_impl(GLuint* texture_id, GLuint* framebuffer_object);
 static void* get_proc_address_mpv(void* ctx, const char* name);
 
+#ifndef GL_FRAMEBUFFER
 #define GL_FRAMEBUFFER            0x8D40
+#endif
+#ifndef GL_COLOR_ATTACHMENT0
 #define GL_COLOR_ATTACHMENT0      0x8CE0
+#endif
+#ifndef GL_RGBA8
 #define GL_RGBA8                  0x8058
+#endif
+#ifndef GL_FRAMEBUFFER_COMPLETE
 #define GL_FRAMEBUFFER_COMPLETE   0x8CD5
+#endif
+
 typedef void (APIENTRY *PFNGLGENFRAMEBUFFERSPROC)(GLsizei n, GLuint *framebuffers);
 typedef void (APIENTRY *PFNGLBINDFRAMEBUFFERPROC)(GLenum target, GLuint framebuffer);
 typedef void (APIENTRY *PFNGLFRAMEBUFFERTEXTURE2DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
@@ -67,7 +80,7 @@ pfnGlCheckFramebufferStatus;
 return gl_functions_loaded;
 }
 
-#endif
+#endif // desktop platforms
 
 CREATE_LOCK(global_guard);
 JavaVM *global_jvm = nullptr;
@@ -80,7 +93,7 @@ if (!global_jvm) {
 env->GetJavaVM(&global_jvm);
 if (!global_jvm) {
 LOG("failed to get current jvm");
-exit(1); // TODO: don't exit
+exit(1);
 }
 
 av_jni_set_java_vm(global_jvm, &app_context);
@@ -89,8 +102,6 @@ av_jni_set_java_vm(global_jvm, &app_context);
 jvm_ = global_jvm;
 handle_ = mpv_create();
 
-// use terminal log level but request verbose messages
-// this way --msg-level can be used to adjust later
 mpv_request_log_messages(handle_, "terminal-default");
 mpv_set_option_string(handle_, "msg-level", "all=v");
 }
@@ -231,11 +242,27 @@ return mpv_set_option(handle_, "wid", MPV_FORMAT_INT64, &wid) >= 0;
 }
 #endif
 
+// ============================================================================
+// Desktop render context (Windows and Linux)
+// ============================================================================
+
+#ifdef _WIN32
+
+static void* get_proc_address_mpv(void* ctx, const char* name) {
+void* addr = (void*)wglGetProcAddress(name);
+if (addr == nullptr || (reinterpret_cast<intptr_t>(addr) >= -1 && reinterpret_cast<intptr_t>(addr) <= 3)) {
+static HMODULE opengl32 = LoadLibraryA("opengl32.dll");
+if (opengl32) {
+addr = (void*)GetProcAddress(opengl32, name);
+}
+}
+return addr;
+}
+
 bool mpv_handle_t::create_render_context(HDC device, HGLRC context) {
 FP;
 CHECK_HANDLE()
 
-#ifdef _WIN32
 if (render_context_)
 return true;
 
@@ -276,23 +303,7 @@ return false;
 wglMakeCurrent(old_dc, old_ctx);
 
 return true;
-#else
-return false;
-#endif
 }
-
-#ifdef _WIN32
-static void* get_proc_address_mpv(void* ctx, const char* name) {
-void* addr = (void*)wglGetProcAddress(name);
-if (addr == nullptr || (reinterpret_cast<intptr_t>(addr) >= -1 && reinterpret_cast<intptr_t>(addr) <= 3)) {
-static HMODULE opengl32 = LoadLibraryA("opengl32.dll");
-if (opengl32) {
-addr = (void*)GetProcAddress(opengl32, name);
-}
-}
-return addr;
-}
-#endif
 
 bool mpv_handle_t::destroy_render_context() {
 FP;
@@ -376,7 +387,6 @@ LOCK(texture_lock);
 width_ = 0;
 height_ = 0;
 
-
 HDC old_dc = wglGetCurrentDC();
 HGLRC old_ctx = wglGetCurrentContext();
 wglMakeCurrent(device_, context_);
@@ -386,20 +396,6 @@ bool released = release_texture_impl(&texture_, &fbo_);
 wglMakeCurrent(old_dc, old_ctx);
 
 return released;
-}
-
-bool release_texture_impl(GLuint* texture_id, GLuint* framebuffer_object) {
-if (*texture_id == GL_ZERO || *framebuffer_object == GL_ZERO) return false;
-
-GLuint textures_to_delete[1] = { *texture_id };
-GLuint framebuffer_to_delete[1] = { *framebuffer_object };
-
-glDeleteTextures(1, textures_to_delete);
-pfnGlDeleteFramebuffers(1, framebuffer_to_delete);
-
-*texture_id = GL_ZERO;
-*framebuffer_object = GL_ZERO;
-return true;
 }
 
 bool mpv_handle_t::render_frame() {
@@ -416,7 +412,6 @@ LOG("Failed to make OpenGL context current in render_frame");
 return false;
 }
 
-// 绑定 FBO 并检查状态
 pfnGlBindFramebuffer(GL_FRAMEBUFFER, fbo_);
 GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
 if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -425,8 +420,6 @@ wglMakeCurrent(old_dc, old_ctx);
 return false;
 }
 
-// On resize, viewport can stay stale from previous dimensions on some drivers.
-// Always force it to current render target size before asking mpv to render.
 glViewport(0, 0, width_, height_);
 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 glClear(GL_COLOR_BUFFER_BIT);
@@ -443,13 +436,11 @@ MPV_RENDER_PARAM_INVALID, nullptr
 },
 };
 
-// 无论是否有新帧，都调用 render（mpv 文档建议）
 int render_result = mpv_render_context_render(render_context_, params);
 if (render_result < 0) {
 LOG("mpv_render_context_render failed: %d", render_result);
 }
 
-// 解绑 FBO
 pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 glFinish();
@@ -543,6 +534,409 @@ result << "size=" << width_ << "x" << height_
 << " nonBlack=" << non_black << "/" << count;
 return result.str();
 }
+
+bool release_texture_impl(GLuint* texture_id, GLuint* framebuffer_object) {
+if (*texture_id == GL_ZERO || *framebuffer_object == GL_ZERO) return false;
+
+GLuint textures_to_delete[1] = { *texture_id };
+GLuint framebuffer_to_delete[1] = { *framebuffer_object };
+
+glDeleteTextures(1, textures_to_delete);
+pfnGlDeleteFramebuffers(1, framebuffer_to_delete);
+
+*texture_id = GL_ZERO;
+*framebuffer_object = GL_ZERO;
+return true;
+}
+
+#elif defined(__linux__) && !defined(__ANDROID__)
+
+static void* get_proc_address_mpv(void* ctx, const char* name) {
+void* addr = (void*)glXGetProcAddressARB((const GLubyte*)name);
+if (!addr) {
+addr = dlsym(RTLD_DEFAULT, name);
+}
+return addr;
+}
+
+bool mpv_handle_t::create_render_context(long device, long context) {
+FP;
+CHECK_HANDLE()
+
+if (render_context_)
+return true;
+
+device_ = (Display*)device;
+context_ = (GLXContext)context;
+drawable_ = glXGetCurrentDrawable();
+
+Display* old_display = glXGetCurrentDisplay();
+GLXContext old_ctx = glXGetCurrentContext();
+GLXDrawable old_drawable = glXGetCurrentDrawable();
+
+if (device_ && context_ && drawable_) {
+    glXMakeCurrent(device_, drawable_, context_);
+}
+
+if (!load_gl_functions()) {
+LOG("Failed to load OpenGL functions on Linux");
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+return false;
+}
+
+mpv_opengl_init_params gl_init_params{
+.get_proc_address = get_proc_address_mpv,
+.get_proc_address_ctx = nullptr
+};
+mpv_render_param params[] = {
+{
+MPV_RENDER_PARAM_API_TYPE, const_cast<char *>(MPV_RENDER_API_TYPE_OPENGL)
+},
+{
+MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init_params
+},
+{
+MPV_RENDER_PARAM_INVALID, nullptr
+},
+};
+
+if (mpv_render_context_create(&render_context_, handle_, params) < 0) {
+render_context_ = nullptr;
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+return false;
+}
+
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+
+return true;
+}
+
+bool mpv_handle_t::destroy_render_context() {
+FP;
+CHECK_HANDLE()
+
+if (!render_context_)
+return false;
+
+Display* old_display = glXGetCurrentDisplay();
+GLXContext old_ctx = glXGetCurrentContext();
+GLXDrawable old_drawable = glXGetCurrentDrawable();
+
+if (device_ && context_ && drawable_) {
+    glXMakeCurrent(device_, drawable_, context_);
+}
+
+mpv_render_context_free(render_context_);
+
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+
+render_context_ = nullptr;
+return true;
+}
+
+GLuint mpv_handle_t::create_texture(int width, int height) {
+FP;
+CHECK_HANDLE_RETURN_INT()
+LOCK(texture_lock);
+
+Display* old_display = glXGetCurrentDisplay();
+GLXContext old_ctx = glXGetCurrentContext();
+GLXDrawable old_drawable = glXGetCurrentDrawable();
+
+if (device_ && context_ && drawable_) {
+    if (!glXMakeCurrent(device_, drawable_, context_)) {
+        LOG("Failed to make OpenGL context current in create_texture");
+        return 0;
+    }
+}
+
+GLuint old_texture = texture_;
+GLuint old_fbo = fbo_;
+GLuint new_texture = GL_ZERO;
+GLuint new_fbo = GL_ZERO;
+
+glGenTextures(1, &new_texture);
+glBindTexture(GL_TEXTURE_2D, new_texture);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+pfnGlGenFramebuffers(1, &new_fbo);
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, new_fbo);
+pfnGlFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+GL_TEXTURE_2D, new_texture, 0);
+
+GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
+if (status != GL_FRAMEBUFFER_COMPLETE) {
+LOG("Framebuffer not complete in create_texture: 0x%x", status);
+release_texture_impl(&new_texture, &new_fbo);
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+return 0;
+}
+
+texture_ = new_texture;
+fbo_ = new_fbo;
+width_ = width;
+height_ = height;
+
+if (old_texture != GL_ZERO && old_fbo != GL_ZERO) {
+release_texture_impl(&old_texture, &old_fbo);
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+
+return texture_;
+}
+
+bool mpv_handle_t::release_texture() {
+FP;
+CHECK_HANDLE()
+LOCK(texture_lock);
+
+width_ = 0;
+height_ = 0;
+
+Display* old_display = glXGetCurrentDisplay();
+GLXContext old_ctx = glXGetCurrentContext();
+GLXDrawable old_drawable = glXGetCurrentDrawable();
+
+if (device_ && context_ && drawable_) {
+    glXMakeCurrent(device_, drawable_, context_);
+}
+
+bool released = release_texture_impl(&texture_, &fbo_);
+
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+
+return released;
+}
+
+bool release_texture_impl(GLuint* texture_id, GLuint* framebuffer_object) {
+if (*texture_id == GL_ZERO || *framebuffer_object == GL_ZERO) return false;
+
+GLuint textures_to_delete[1] = { *texture_id };
+GLuint framebuffer_to_delete[1] = { *framebuffer_object };
+
+glDeleteTextures(1, textures_to_delete);
+pfnGlDeleteFramebuffers(1, framebuffer_to_delete);
+
+*texture_id = GL_ZERO;
+*framebuffer_object = GL_ZERO;
+return true;
+}
+
+bool mpv_handle_t::render_frame() {
+CHECK_HANDLE()
+LOCK(texture_lock);
+
+if (!render_context_ || !context_ || !device_ || !fbo_ || !texture_ || !width_ || !height_)
+return false;
+
+Display* old_display = glXGetCurrentDisplay();
+GLXContext old_ctx = glXGetCurrentContext();
+GLXDrawable old_drawable = glXGetCurrentDrawable();
+
+if (device_ && context_ && drawable_) {
+    if (!glXMakeCurrent(device_, drawable_, context_)) {
+        LOG("Failed to make OpenGL context current in render_frame");
+        return false;
+    }
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
+if (status != GL_FRAMEBUFFER_COMPLETE) {
+LOG("Framebuffer not complete: 0x%x", status);
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+return false;
+}
+
+glViewport(0, 0, width_, height_);
+glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+glClear(GL_COLOR_BUFFER_BIT);
+
+mpv_opengl_fbo fbo_params{
+static_cast<int>(fbo_), width_, height_, GL_RGBA8
+};
+mpv_render_param params[] = {
+{
+MPV_RENDER_PARAM_OPENGL_FBO, &fbo_params
+},
+{
+MPV_RENDER_PARAM_INVALID, nullptr
+},
+};
+
+int render_result = mpv_render_context_render(render_context_, params);
+if (render_result < 0) {
+LOG("mpv_render_context_render failed: %d", render_result);
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+glFinish();
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+
+return render_result >= 0;
+}
+
+bool mpv_handle_t::debug_render_solid(float red, float green, float blue, float alpha) {
+CHECK_HANDLE()
+LOCK(texture_lock);
+
+if (!context_ || !device_ || !fbo_ || !texture_ || !width_ || !height_)
+return false;
+
+Display* old_display = glXGetCurrentDisplay();
+GLXContext old_ctx = glXGetCurrentContext();
+GLXDrawable old_drawable = glXGetCurrentDrawable();
+
+if (device_ && context_ && drawable_) {
+    if (!glXMakeCurrent(device_, drawable_, context_)) {
+        LOG("Failed to make OpenGL context current in debug_render_solid");
+        return false;
+    }
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
+if (status != GL_FRAMEBUFFER_COMPLETE) {
+LOG("Framebuffer not complete in debug_render_solid: 0x%x", status);
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+return false;
+}
+
+glViewport(0, 0, width_, height_);
+glClearColor(red, green, blue, alpha);
+glClear(GL_COLOR_BUFFER_BIT);
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+glFinish();
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+
+return true;
+}
+
+std::string mpv_handle_t::read_texture_stats() {
+LOCK(texture_lock);
+
+if (!context_ || !device_ || !fbo_ || !texture_ || !width_ || !height_)
+return "unavailable";
+
+Display* old_display = glXGetCurrentDisplay();
+GLXContext old_ctx = glXGetCurrentContext();
+GLXDrawable old_drawable = glXGetCurrentDrawable();
+
+if (device_ && context_ && drawable_) {
+    if (!glXMakeCurrent(device_, drawable_, context_)) {
+        return "glXMakeCurrent=false";
+    }
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+GLenum status = pfnGlCheckFramebufferStatus(GL_FRAMEBUFFER);
+if (status != GL_FRAMEBUFFER_COMPLETE) {
+std::ostringstream failed;
+failed << "fboStatus=0x" << std::hex << status;
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+return failed.str();
+}
+
+int sample_width = width_ < 64 ? width_ : 64;
+int sample_height = height_ < 64 ? height_ : 64;
+std::vector<unsigned char> pixels(sample_width * sample_height * 4);
+glReadPixels(0, 0, sample_width, sample_height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+long long sum_r = 0;
+long long sum_g = 0;
+long long sum_b = 0;
+long long non_black = 0;
+for (int i = 0; i < sample_width * sample_height; ++i) {
+unsigned char r = pixels[i * 4];
+unsigned char g = pixels[i * 4 + 1];
+unsigned char b = pixels[i * 4 + 2];
+sum_r += r;
+sum_g += g;
+sum_b += b;
+if (r > 3 || g > 3 || b > 3) {
+non_black++;
+}
+}
+
+pfnGlBindFramebuffer(GL_FRAMEBUFFER, 0);
+if (old_display && old_drawable) {
+    glXMakeCurrent(old_display, old_drawable, old_ctx);
+}
+
+int count = sample_width * sample_height;
+std::ostringstream result;
+result << "size=" << width_ << "x" << height_
+<< " sample=" << sample_width << "x" << sample_height
+<< " avgRgb=" << (sum_r / count) << "," << (sum_g / count) << "," << (sum_b / count)
+<< " nonBlack=" << non_black << "/" << count;
+return result.str();
+}
+
+#else
+// Fallback stubs for platforms without render API support
+
+bool mpv_handle_t::create_render_context(long device, long context) {
+LOG("create_render_context is not supported on this platform");
+return false;
+}
+
+bool mpv_handle_t::destroy_render_context() {
+return false;
+}
+
+GLuint mpv_handle_t::create_texture(int width, int height) {
+return 0;
+}
+
+bool mpv_handle_t::release_texture() {
+return false;
+}
+
+bool mpv_handle_t::render_frame() {
+return false;
+}
+
+bool mpv_handle_t::debug_render_solid(float red, float green, float blue, float alpha) {
+return false;
+}
+
+std::string mpv_handle_t::read_texture_stats() {
+return "unsupported";
+}
+
+#endif // platform render API
 
 bool mpv_handle_t::destroy(JNIEnv *env) {
 FP;

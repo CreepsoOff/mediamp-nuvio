@@ -12,6 +12,7 @@
 #define MEDIAMP_MPV_HANDLE_T_H
 
 #include <iostream>
+#include <memory>
 #include <jni.h>
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
@@ -19,6 +20,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <gl/GL.h>
+#elif defined(__linux__) && !defined(__ANDROID__)
+#include <GL/gl.h>
+#include <GL/glx.h>
+#include <dlfcn.h>
 #endif
 #include "compatible_thread.h"
 #include "global_lock.h"
@@ -53,8 +58,14 @@ bool attach_window_surface(int64_t wid);
 bool detach_window_surface();
 #endif
 
-// Render API (Windows x64 only)
+// Render API (desktop: Windows and Linux)
+#ifdef _WIN32
 bool create_render_context(HDC device, HGLRC context);
+#elif defined(__linux__) && !defined(__ANDROID__)
+bool create_render_context(long device, long context);
+#else
+bool create_render_context(long device, long context);
+#endif
 bool destroy_render_context();
 
 GLuint create_texture(int width, int height);
@@ -75,10 +86,16 @@ bool surface_attached_ = false;
 jobject surface_;
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) || (defined(__linux__) && !defined(__ANDROID__))
 mpv_render_context *render_context_ = nullptr;
+#ifdef _WIN32
 HGLRC context_ = nullptr;
 HDC device_ = nullptr;
+#elif defined(__linux__)
+GLXContext context_ = nullptr;
+Display* device_ = nullptr;
+GLXDrawable drawable_ = 0;
+#endif
 
 GLuint fbo_ = 0, texture_ = 0;
 int width_ = 0, height_ = 0;

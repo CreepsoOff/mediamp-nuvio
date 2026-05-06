@@ -55,14 +55,26 @@ elseif(ANDROID)
         set(MPV_LIB_EXTERNAL_AVCODEC_NAME "libavcodec.so")
         set(MPV_LIB_EXTERNAL_SWSCALE_NAME "libswscale.so")
     endif()
+elseif(UNIX AND NOT APPLE)
+    # Linux
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(MPV REQUIRED mpv)
+    include_directories(${MPV_INCLUDE_DIRS})
+    link_directories(${MPV_LIBRARY_DIRS})
+    set(MPV_LIB_PATH "")
+    set(MPV_LIB_NAME "")
+
+    find_package(OpenGL REQUIRED)
 else()
     message(FATAL_ERROR "Unknown operating system")
 endif()
 
 # configure project
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/libmpv/include")
-link_directories(${MPV_LIB_PATH})
+if(NOT (UNIX AND NOT APPLE AND NOT ANDROID))
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/libmpv/include")
+    link_directories(${MPV_LIB_PATH})
+endif()
 
 if (NOT ANDROID) 
     set(JAVA_AWT_LIBRARY NotNeeded) # todo
@@ -106,39 +118,52 @@ else()
         endif()
     endforeach()
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-            ${FILTERED_JNI_LIBRARIES}
-            "${MPV_LIB_PATH}/${MPV_LIB_EXTERNAL_AVCODEC_NAME}"
-            "${MPV_LIB_PATH}/${MPV_LIB_EXTERNAL_SWSCALE_NAME}"
-            "${MPV_LIB_PATH}/${MPV_LIB_NAME}")
-    if(WIN32)
+    if(UNIX AND NOT APPLE)
         target_link_libraries(${PROJECT_NAME} PRIVATE
-                opengl32)
+                ${FILTERED_JNI_LIBRARIES}
+                ${MPV_LIBRARIES}
+                OpenGL::GL
+                dl
+                GL
+                X11)
+    else()
+        target_link_libraries(${PROJECT_NAME} PRIVATE
+                ${FILTERED_JNI_LIBRARIES}
+                "${MPV_LIB_PATH}/${MPV_LIB_EXTERNAL_AVCODEC_NAME}"
+                "${MPV_LIB_PATH}/${MPV_LIB_EXTERNAL_SWSCALE_NAME}"
+                "${MPV_LIB_PATH}/${MPV_LIB_NAME}")
+        if(WIN32)
+            target_link_libraries(${PROJECT_NAME} PRIVATE
+                    opengl32)
+        endif()
     endif()
 endif()
 
-# 查找所有动态库文件
-file(GLOB MPV_LIBS_DEPS
-    "${MPV_LIB_PATH}/*.dylib"  # macOS 动态库
-    "${MPV_LIB_PATH}/*.so"     # Linux 和 Android 动态库
-    "${MPV_LIB_PATH}/*.dll"    # Windows 动态库
-)
+# Copy prebuilt libraries (not needed on Linux where we use system libmpv)
+if(NOT (UNIX AND NOT APPLE AND NOT ANDROID))
+    file(GLOB MPV_LIBS_DEPS
+        "${MPV_LIB_PATH}/*.dylib"
+        "${MPV_LIB_PATH}/*.so"
+        "${MPV_LIB_PATH}/*.dll"
+    )
 
-set(MPV_OUTPUT_LIBS_DIR "")
-if (WIN32 OR ANDROID)
-    set(MPV_OUTPUT_LIBS_DIR $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-else ()
-    set(MPV_OUTPUT_LIBS_DIR "$<TARGET_FILE_DIR:${PROJECT_NAME}>/deps/")
-endif ()
+    set(MPV_OUTPUT_LIBS_DIR "")
+    if (WIN32 OR ANDROID)
+        set(MPV_OUTPUT_LIBS_DIR $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+    else ()
+        set(MPV_OUTPUT_LIBS_DIR "$<TARGET_FILE_DIR:${PROJECT_NAME}>/deps/")
+    endif ()
 
-# 在构建后复制所有动态库文件到目标目录
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying dynamic library files..."
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${MPV_OUTPUT_LIBS_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${MPV_LIBS_DEPS}
-        ${MPV_OUTPUT_LIBS_DIR}
-)
+    if(MPV_LIBS_DEPS)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E echo "Copying dynamic library files..."
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${MPV_OUTPUT_LIBS_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${MPV_LIBS_DEPS}
+                ${MPV_OUTPUT_LIBS_DIR}
+        )
+    endif()
+endif()
 
 
 message(STATUS "MPV library path: ${MPV_LIB_PATH}")

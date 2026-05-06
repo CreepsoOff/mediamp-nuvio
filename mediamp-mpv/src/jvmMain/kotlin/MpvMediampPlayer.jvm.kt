@@ -167,6 +167,16 @@ actual class MpvMediampPlayer(
                 handle.option("vo", "libmpv")
             }
 
+            is Platform.Linux -> {
+                handle.option("gpu-context", "x11egl,wayland,auto")
+                handle.option("opengl-es", "no")
+
+                handle.option("ao", "pulse,alsa")
+                handle.option("vo", "libmpv")
+                handle.option("fbo-format", "rgba8")
+                handle.option("dither-depth", "no")
+            }
+
             else -> {}
         }
 

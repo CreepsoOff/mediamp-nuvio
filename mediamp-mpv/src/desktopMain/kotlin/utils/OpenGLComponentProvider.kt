@@ -13,31 +13,32 @@ import org.jetbrains.skia.DirectContext
 import org.jetbrains.skiko.SkiaLayer
 import org.jetbrains.skiko.context.ContextHandler
 import org.jetbrains.skiko.context.OpenGLContextHandler
-import org.jetbrains.skiko.redrawer.WindowsOpenGLRedrawer
 
 class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
-    private val openglRedrawer: WindowsOpenGLRedrawer = skiaLayer.redrawer as WindowsOpenGLRedrawer
+    private val redrawer: Any = skiaLayer.redrawer!!
 
-    private val deviceHandleField = WindowsOpenGLRedrawer::class.java
+    private val isWindows = System.getProperty("os.name")?.contains("Windows", ignoreCase = true) == true
+
+    private val deviceHandleField = redrawer::class.java
         .getDeclaredField("device")
         .also { it.isAccessible = true }
 
-    private val glContextHandleField = WindowsOpenGLRedrawer::class.java
+    private val glContextHandleField = redrawer::class.java
         .getDeclaredField("context")
         .also { it.isAccessible = true }
 
-    private val contextHandlerHandleField = WindowsOpenGLRedrawer::class.java
+    private val contextHandlerHandleField = redrawer::class.java
         .getDeclaredField("contextHandler")
         .also { it.isAccessible = true }
     private val directContextHandler = ContextHandler::class.java
         .getDeclaredField("context")
         .also { it.isAccessible = true }
 
-    val glDevice: Long get() = deviceHandleField.getLong(openglRedrawer)
-    val glContext: Long get() = glContextHandleField.getLong(openglRedrawer)
+    val glDevice: Long get() = deviceHandleField.getLong(redrawer)
+    val glContext: Long get() = glContextHandleField.getLong(redrawer)
     val contextSignature: String get() = "$glDevice:$glContext"
 
     val directContext: DirectContext
-        get() = (contextHandlerHandleField.get(openglRedrawer) as OpenGLContextHandler)
+        get() = (contextHandlerHandleField.get(redrawer) as OpenGLContextHandler)
             .let { directContextHandler.get(it) as DirectContext }
 }
