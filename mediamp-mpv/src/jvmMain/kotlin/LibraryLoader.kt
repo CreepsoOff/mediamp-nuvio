@@ -12,10 +12,20 @@ import org.openani.mediamp.internal.Platform
 import org.openani.mediamp.internal.currentPlatform
 
 object LibraryLoader {
+    @Volatile
+    private var loaded = false
+
     fun loadLibraries() {
+        if (loaded) return
         val platform = currentPlatform()
         if (platform is Platform.Android || platform is Platform.Windows || platform is Platform.Linux) {
-            System.loadLibrary("mediampv")
+            try {
+                System.loadLibrary("mediampv")
+                loaded = true
+            } catch (_: UnsatisfiedLinkError) {
+                // Library may have already been loaded via System.load() by the runtime bootstrap
+                loaded = true
+            }
         }
     }
 }
