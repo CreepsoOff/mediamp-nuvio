@@ -153,10 +153,7 @@ actual fun MpvMediampPlayerSurface(
 
         // Render mpv frame into FBO and draw to Compose canvas
         if (textureId != 0) {
-            val renderOk = runCatching { player.renderFrame() }.getOrDefault(false)
-            if (renderOk) {
-                runCatching { components.directContext.resetGLAll() }
-            }
+            player.renderFrame()
         }
 
         player.image?.let {
