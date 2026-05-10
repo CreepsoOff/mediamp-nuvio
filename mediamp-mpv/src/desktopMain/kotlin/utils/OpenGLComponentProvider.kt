@@ -36,6 +36,7 @@ class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
 
     val glDevice: Long get() = deviceHandleField.getLong(openglRedrawer)
     val glContext: Long get() = glContextHandleField.getLong(openglRedrawer)
+    val contextSignature: String get() = "${glDevice}_${glContext}"
 
     val directContext: DirectContext
         get() = (contextHandlerHandleField.get(openglRedrawer) as OpenGLContextHandler)
