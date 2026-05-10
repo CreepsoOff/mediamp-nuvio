@@ -111,6 +111,39 @@ static void emit_property_change(JNIEnv *env, mpv_event_property *prop, jobject 
     if (value) env->DeleteLocalRef(value);
 }
 
+static void emit_file_loaded(JNIEnv *env, jobject event_listener) {
+    if (!env || !event_listener) return;
+    LOG("[event_loop] file loaded");
+    env->CallVoidMethod(event_listener,
+        jni_mediamp_method_EventListener_onFileLoaded);
+    clear_jni_exception(env, "EventListener.onFileLoaded");
+}
+
+static void emit_video_reconfig(JNIEnv *env, jobject event_listener) {
+    if (!env || !event_listener) return;
+    LOG("[event_loop] video reconfigured");
+    env->CallVoidMethod(event_listener,
+        jni_mediamp_method_EventListener_onVideoReconfig);
+    clear_jni_exception(env, "EventListener.onVideoReconfig");
+}
+
+static void emit_end_file(JNIEnv *env, jobject event_listener, mpv_event_end_file *ef) {
+    if (!env || !event_listener || !ef) return;
+    LOG("[event_loop] end file reason=%d", ef->reason);
+    env->CallVoidMethod(event_listener,
+        jni_mediamp_method_EventListener_onEndFile,
+        (jint)ef->reason);
+    clear_jni_exception(env, "EventListener.onEndFile");
+}
+
+static void emit_tracks_changed(JNIEnv *env, jobject event_listener) {
+    if (!env || !event_listener) return;
+    LOG("[event_loop] tracks changed");
+    env->CallVoidMethod(event_listener,
+        jni_mediamp_method_EventListener_onTracksChanged);
+    clear_jni_exception(env, "EventListener.onTracksChanged");
+}
+
 static void emit_log_message(JNIEnv *env, mpv_event_log_message *message) {
     if (!env || !message || !jni_mediamp_clazz_MPVLogKt || !jni_mediamp_method_MPVLogKt_onNativeLog) {
         return;
@@ -166,12 +199,23 @@ void *(mpv_handle_t::event_loop)(void *arg) {
         mpv_event_property *event_property = nullptr;
         mpv_event_log_message *log_message = nullptr;
 
-        // 不处理 NONE 事件
         if ((event = mpv_wait_event(handle_, -1.0))->event_id == MPV_EVENT_NONE) {
             continue;
         }
 
         switch (event->event_id) {
+            case MPV_EVENT_FILE_LOADED:
+                emit_file_loaded(env, event_listener_);
+                break;
+            case MPV_EVENT_VIDEO_RECONFIG:
+                emit_video_reconfig(env, event_listener_);
+                break;
+            case MPV_EVENT_END_FILE:
+                emit_end_file(env, event_listener_, (mpv_event_end_file *)event->data);
+                break;
+            case MPV_EVENT_TRACKS_CHANGED:
+                emit_tracks_changed(env, event_listener_);
+                break;
             case MPV_EVENT_PROPERTY_CHANGE:
                 event_property = (mpv_event_property *) event->data;
                 emit_property_change(env, event_property, event_listener_);

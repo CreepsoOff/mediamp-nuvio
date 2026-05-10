@@ -10,6 +10,7 @@ package org.openani.mediamp.mpv
 
 import androidx.compose.ui.geometry.Size
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -115,7 +116,32 @@ abstract class JvmMpvMediampPlayer(
             }
         }
 
+        override fun onFileLoaded() {
+            fileLoadedFlow.tryEmit(Unit)
+        }
+
+        override fun onVideoReconfig() {
+            voConfigured = true
+            videoReconfigFlow.tryEmit(Unit)
+        }
+
+        override fun onEndFile(reason: Int) {
+            voConfigured = false
+            endFileFlow.tryEmit(reason)
+        }
+
+        override fun onTracksChanged() {
+            tracksChangedFlow.tryEmit(Unit)
+        }
     }
+
+    protected val fileLoadedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    protected val videoReconfigFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    protected val endFileFlow = MutableSharedFlow<Int>(extraBufferCapacity = 1)
+    protected val tracksChangedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    @Volatile
+    var voConfigured: Boolean = false
+        private set
 
     override val impl: Any get() = handle
 

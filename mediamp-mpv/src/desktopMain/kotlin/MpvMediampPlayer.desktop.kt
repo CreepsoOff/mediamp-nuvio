@@ -30,6 +30,10 @@ actual class MpvMediampPlayer(
         _currentPositionMillis.value = ms
     }
 
+    val onVideoReconfig = videoReconfigFlow
+
+    val isVoConfigured: Boolean get() = voConfigured
+
     companion object {
         internal const val GL_TEXTURE_2D = 0x0DE1
         internal const val GL_RGBA8 = 0x8058

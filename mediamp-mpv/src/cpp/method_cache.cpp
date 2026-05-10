@@ -96,6 +96,14 @@ void jni_cache_classes(JNIEnv *env) {
             find_method(env, event_listener_class, "onPropertyChange", "(Ljava/lang/String;D)V");
     jmethodID on_property_change_string =
             find_method(env, event_listener_class, "onPropertyChange", "(Ljava/lang/String;Ljava/lang/String;)V");
+    jmethodID on_file_loaded =
+            find_method(env, event_listener_class, "onFileLoaded", "()V");
+    jmethodID on_video_reconfig =
+            find_method(env, event_listener_class, "onVideoReconfig", "()V");
+    jmethodID on_end_file =
+            find_method(env, event_listener_class, "onEndFile", "(I)V");
+    jmethodID on_tracks_changed =
+            find_method(env, event_listener_class, "onTracksChanged", "()V");
     jmethodID on_render_update =
             find_method(env, render_update_listener_class, "onRenderUpdate", "()V");
     jmethodID on_native_log =
@@ -115,6 +123,10 @@ void jni_cache_classes(JNIEnv *env) {
         !on_property_change_int64 ||
         !on_property_change_double ||
         !on_property_change_string ||
+        !on_file_loaded ||
+        !on_video_reconfig ||
+        !on_end_file ||
+        !on_tracks_changed ||
         !on_render_update ||
         !on_native_log ||
         !seekable_input_read ||
@@ -136,6 +148,10 @@ void jni_cache_classes(JNIEnv *env) {
     jni_mediamp_method_EventListener_onPropertyChange_INT64 = on_property_change_int64;
     jni_mediamp_method_EventListener_onPropertyChange_DOUBLE = on_property_change_double;
     jni_mediamp_method_EventListener_onPropertyChange_STRING = on_property_change_string;
+    jni_mediamp_method_EventListener_onFileLoaded = on_file_loaded;
+    jni_mediamp_method_EventListener_onVideoReconfig = on_video_reconfig;
+    jni_mediamp_method_EventListener_onEndFile = on_end_file;
+    jni_mediamp_method_EventListener_onTracksChanged = on_tracks_changed;
     jni_mediamp_clazz_RenderUpdateListener = render_update_listener_class;
     jni_mediamp_method_RenderUpdateListener_onRenderUpdate = on_render_update;
     jni_mediamp_clazz_MPVLogKt = mpv_log_class;
