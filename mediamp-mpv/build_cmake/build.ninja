@@ -51,7 +51,7 @@ build cmake_object_order_depends_target_mediampv: phony || .
 
 build CMakeFiles\mediampv.dir\src\cpp\main.cpp.obj: CXX_COMPILER__mediampv_unscanned_Release F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\main.cpp || cmake_object_order_depends_target_mediampv
   DEFINES = -DNOMINMAX -D_WIN32_WINNT=0x0A00 -Dmediampv_EXPORTS
-  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD /Zc:__cplusplus
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MT /Zc:__cplusplus
   INCLUDES = -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\include -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include" -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include\win32" -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\include
   OBJECT_DIR = CMakeFiles\mediampv.dir
   OBJECT_FILE_DIR = CMakeFiles\mediampv.dir\src\cpp
@@ -60,7 +60,7 @@ build CMakeFiles\mediampv.dir\src\cpp\main.cpp.obj: CXX_COMPILER__mediampv_unsca
 
 build CMakeFiles\mediampv.dir\src\cpp\compatible_thread.cpp.obj: CXX_COMPILER__mediampv_unscanned_Release F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\compatible_thread.cpp || cmake_object_order_depends_target_mediampv
   DEFINES = -DNOMINMAX -D_WIN32_WINNT=0x0A00 -Dmediampv_EXPORTS
-  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD /Zc:__cplusplus
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MT /Zc:__cplusplus
   INCLUDES = -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\include -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include" -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include\win32" -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\include
   OBJECT_DIR = CMakeFiles\mediampv.dir
   OBJECT_FILE_DIR = CMakeFiles\mediampv.dir\src\cpp
@@ -69,7 +69,7 @@ build CMakeFiles\mediampv.dir\src\cpp\compatible_thread.cpp.obj: CXX_COMPILER__m
 
 build CMakeFiles\mediampv.dir\src\cpp\method_cache.cpp.obj: CXX_COMPILER__mediampv_unscanned_Release F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\method_cache.cpp || cmake_object_order_depends_target_mediampv
   DEFINES = -DNOMINMAX -D_WIN32_WINNT=0x0A00 -Dmediampv_EXPORTS
-  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD /Zc:__cplusplus
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MT /Zc:__cplusplus
   INCLUDES = -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\include -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include" -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include\win32" -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\include
   OBJECT_DIR = CMakeFiles\mediampv.dir
   OBJECT_FILE_DIR = CMakeFiles\mediampv.dir\src\cpp
@@ -78,7 +78,7 @@ build CMakeFiles\mediampv.dir\src\cpp\method_cache.cpp.obj: CXX_COMPILER__mediam
 
 build CMakeFiles\mediampv.dir\src\cpp\event_listener.cpp.obj: CXX_COMPILER__mediampv_unscanned_Release F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\event_listener.cpp || cmake_object_order_depends_target_mediampv
   DEFINES = -DNOMINMAX -D_WIN32_WINNT=0x0A00 -Dmediampv_EXPORTS
-  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD /Zc:__cplusplus
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MT /Zc:__cplusplus
   INCLUDES = -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\include -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include" -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include\win32" -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\include
   OBJECT_DIR = CMakeFiles\mediampv.dir
   OBJECT_FILE_DIR = CMakeFiles\mediampv.dir\src\cpp
@@ -87,7 +87,7 @@ build CMakeFiles\mediampv.dir\src\cpp\event_listener.cpp.obj: CXX_COMPILER__medi
 
 build CMakeFiles\mediampv.dir\src\cpp\mpv_handle_t.cpp.obj: CXX_COMPILER__mediampv_unscanned_Release F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\mpv_handle_t.cpp || cmake_object_order_depends_target_mediampv
   DEFINES = -DNOMINMAX -D_WIN32_WINNT=0x0A00 -Dmediampv_EXPORTS
-  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD /Zc:__cplusplus
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MT /Zc:__cplusplus
   INCLUDES = -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\include -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include" -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include\win32" -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\include
   OBJECT_DIR = CMakeFiles\mediampv.dir
   OBJECT_FILE_DIR = CMakeFiles\mediampv.dir\src\cpp
@@ -96,7 +96,7 @@ build CMakeFiles\mediampv.dir\src\cpp\mpv_handle_t.cpp.obj: CXX_COMPILER__mediam
 
 build CMakeFiles\mediampv.dir\src\cpp\jni.cpp.obj: CXX_COMPILER__mediampv_unscanned_Release F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\jni.cpp || cmake_object_order_depends_target_mediampv
   DEFINES = -DNOMINMAX -D_WIN32_WINNT=0x0A00 -Dmediampv_EXPORTS
-  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD /Zc:__cplusplus
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MT /Zc:__cplusplus
   INCLUDES = -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\include -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include" -I"C:\Program Files\Amazon Corretto\jdk21.0.4_7\include\win32" -IF:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\src\cpp\include
   OBJECT_DIR = CMakeFiles\mediampv.dir
   OBJECT_FILE_DIR = CMakeFiles\mediampv.dir\src\cpp
@@ -112,7 +112,7 @@ build CMakeFiles\mediampv.dir\src\cpp\jni.cpp.obj: CXX_COMPILER__mediampv_unscan
 # Link the shared library mediampv.dll
 
 build mediampv.dll mediampv.lib: CXX_SHARED_LIBRARY_LINKER__mediampv_Release CMakeFiles\mediampv.dir\src\cpp\main.cpp.obj CMakeFiles\mediampv.dir\src\cpp\compatible_thread.cpp.obj CMakeFiles\mediampv.dir\src\cpp\method_cache.cpp.obj CMakeFiles\mediampv.dir\src\cpp\event_listener.cpp.obj CMakeFiles\mediampv.dir\src\cpp\mpv_handle_t.cpp.obj CMakeFiles\mediampv.dir\src\cpp\jni.cpp.obj | F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\lib\windows\x86_64\avcodec-61.lib F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\lib\windows\x86_64\swscale-8.lib F$:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\lib\windows\x86_64\libmpv-2.lib
-  LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -MD
+  LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -MT
   LINK_FLAGS = /machine:x64 /INCREMENTAL:NO
   LINK_LIBRARIES = F:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\lib\windows\x86_64\avcodec-61.lib  F:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\lib\windows\x86_64\swscale-8.lib  F:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\lib\windows\x86_64\libmpv-2.lib  opengl32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
   LINK_PATH = -LIBPATH:F:\Desktop\mnt\NuvioMobile\mediamp\mediamp-mpv\libmpv\lib\windows\x86_64

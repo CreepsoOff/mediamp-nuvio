@@ -1,9 +1,9 @@
 # ninja log v7
-3	571	8001474004532555	CMakeFiles/mediampv.dir/src/cpp/main.cpp.obj	42211ab536d6492d
-7	595	8001474004576401	CMakeFiles/mediampv.dir/src/cpp/compatible_thread.cpp.obj	d3acfdf256bb2f6d
-11	631	8001474004616434	CMakeFiles/mediampv.dir/src/cpp/method_cache.cpp.obj	e9ee46a1f89bab0d
-14	997	8001474004646406	CMakeFiles/mediampv.dir/src/cpp/event_listener.cpp.obj	76be0cb146ce2d93
-23	1062	8001474004736405	CMakeFiles/mediampv.dir/src/cpp/jni.cpp.obj	60a18562a141b3d7
-18	1205	8001474004686408	CMakeFiles/mediampv.dir/src/cpp/mpv_handle_t.cpp.obj	6bb270f1a5c1038d
-1206	2829	8001474017529885	mediampv.dll	865c35ea1e365982
-1206	2829	8001474017529885	mediampv.lib	865c35ea1e365982
+2	524	8001481839281704	CMakeFiles/mediampv.dir/src/cpp/main.cpp.obj	a5abfef4c08c6889
+10	588	8001481839356809	CMakeFiles/mediampv.dir/src/cpp/method_cache.cpp.obj	7e0d2522574dd4c5
+6	607	8001481839316807	CMakeFiles/mediampv.dir/src/cpp/compatible_thread.cpp.obj	7fc0eaf7abaa058
+13	880	8001481839391838	CMakeFiles/mediampv.dir/src/cpp/event_listener.cpp.obj	249bcd670be6c6e6
+21	939	8001481839471910	CMakeFiles/mediampv.dir/src/cpp/jni.cpp.obj	72bad392c91a4c1d
+17	1057	8001481839431908	CMakeFiles/mediampv.dir/src/cpp/mpv_handle_t.cpp.obj	5e7dac116cd294ca
+1057	2302	8001481850986159	mediampv.dll	865c35ea1e365982
+1057	2302	8001481850986159	mediampv.lib	865c35ea1e365982

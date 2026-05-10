@@ -63,8 +63,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-sq9rpl"
-      binary: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-sq9rpl"
+      source: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-i2wlvm"
+      binary: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-i2wlvm"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -74,11 +74,11 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-sq9rpl'
+        Change Dir: 'F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-i2wlvm'
         
-        Run Build Command(s): C:/Users/Fabian/AppData/Local/Programs/Python/Python312/Scripts/ninja.exe -v cmTC_3fa95
-        [1/2] C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP   /DWIN32 /D_WINDOWS /EHsc  /Zi /Ob0 /Od /RTC1 -MDd /showIncludes /FoCMakeFiles\\cmTC_3fa95.dir\\CMakeCXXCompilerABI.cpp.obj /FdCMakeFiles\\cmTC_3fa95.dir\\ /FS -c "C:\\Program Files\\CMake\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
-        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && "C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --msvc-ver=1950 --intdir=CMakeFiles\\cmTC_3fa95.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests  -- C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_3fa95.dir\\CMakeCXXCompilerABI.cpp.obj  /out:cmTC_3fa95.exe /implib:cmTC_3fa95.lib /pdb:cmTC_3fa95.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        Run Build Command(s): C:/Users/Fabian/AppData/Local/Programs/Python/Python312/Scripts/ninja.exe -v cmTC_4f9cb
+        [1/2] C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP   /DWIN32 /D_WINDOWS /EHsc  /Zi /Ob0 /Od /RTC1 -MDd /showIncludes /FoCMakeFiles\\cmTC_4f9cb.dir\\CMakeCXXCompilerABI.cpp.obj /FdCMakeFiles\\cmTC_4f9cb.dir\\ /FS -c "C:\\Program Files\\CMake\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && "C:\\Program Files\\CMake\\bin\\cmake.exe" -E vs_link_exe --msvc-ver=1950 --intdir=CMakeFiles\\cmTC_4f9cb.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests  -- C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_4f9cb.dir\\CMakeCXXCompilerABI.cpp.obj  /out:cmTC_4f9cb.exe /implib:cmTC_4f9cb.lib /pdb:cmTC_4f9cb.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
         
       exitCode: 0
   -
@@ -117,23 +117,23 @@ events:
       - "C:/Program Files/CMake/share/cmake-3.31/Modules/FindJNI.cmake:489 (check_source_compiles)"
       - "CMakeLists.txt:70 (find_package)"
     directories:
-      source: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-qcbb9w"
-      binary: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-qcbb9w"
+      source: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-s6skxv"
+      binary: "F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-s6skxv"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreadedDLL"
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded"
     buildResult:
       variable: "JNI_INCLUDE_PATH2_OPTIONAL"
       cached: true
       stdout: |
-        Change Dir: 'F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-qcbb9w'
+        Change Dir: 'F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/CMakeScratch/TryCompile-s6skxv'
         
-        Run Build Command(s): C:/Users/Fabian/AppData/Local/Programs/Python/Python312/Scripts/ninja.exe -v cmTC_4a156
-        [1/2] C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DJNI_INCLUDE_PATH2_OPTIONAL -I"C:\\Program Files\\Amazon Corretto\\jdk21.0.4_7\\include" /DWIN32 /D_WINDOWS /EHsc  /Zi /Ob0 /Od /RTC1 -std:c++20 -MD /showIncludes /FoCMakeFiles\\cmTC_4a156.dir\\src.cxx.obj /FdCMakeFiles\\cmTC_4a156.dir\\ /FS -c F:\\Desktop\\mnt\\NuvioMobile\\mediamp\\mediamp-mpv\\build_cmake\\CMakeFiles\\CMakeScratch\\TryCompile-qcbb9w\\src.cxx
-        FAILED: [code=2] CMakeFiles/cmTC_4a156.dir/src.cxx.obj 
-        C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DJNI_INCLUDE_PATH2_OPTIONAL -I"C:\\Program Files\\Amazon Corretto\\jdk21.0.4_7\\include" /DWIN32 /D_WINDOWS /EHsc  /Zi /Ob0 /Od /RTC1 -std:c++20 -MD /showIncludes /FoCMakeFiles\\cmTC_4a156.dir\\src.cxx.obj /FdCMakeFiles\\cmTC_4a156.dir\\ /FS -c F:\\Desktop\\mnt\\NuvioMobile\\mediamp\\mediamp-mpv\\build_cmake\\CMakeFiles\\CMakeScratch\\TryCompile-qcbb9w\\src.cxx
+        Run Build Command(s): C:/Users/Fabian/AppData/Local/Programs/Python/Python312/Scripts/ninja.exe -v cmTC_a38db
+        [1/2] C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DJNI_INCLUDE_PATH2_OPTIONAL -I"C:\\Program Files\\Amazon Corretto\\jdk21.0.4_7\\include" /DWIN32 /D_WINDOWS /EHsc  /Zi /Ob0 /Od /RTC1 -std:c++20 -MT /showIncludes /FoCMakeFiles\\cmTC_a38db.dir\\src.cxx.obj /FdCMakeFiles\\cmTC_a38db.dir\\ /FS -c F:\\Desktop\\mnt\\NuvioMobile\\mediamp\\mediamp-mpv\\build_cmake\\CMakeFiles\\CMakeScratch\\TryCompile-s6skxv\\src.cxx
+        FAILED: [code=2] CMakeFiles/cmTC_a38db.dir/src.cxx.obj 
+        C:\\PROGRA~2\\MICROS~3\\18\\BUILDT~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DJNI_INCLUDE_PATH2_OPTIONAL -I"C:\\Program Files\\Amazon Corretto\\jdk21.0.4_7\\include" /DWIN32 /D_WINDOWS /EHsc  /Zi /Ob0 /Od /RTC1 -std:c++20 -MT /showIncludes /FoCMakeFiles\\cmTC_a38db.dir\\src.cxx.obj /FdCMakeFiles\\cmTC_a38db.dir\\ /FS -c F:\\Desktop\\mnt\\NuvioMobile\\mediamp\\mediamp-mpv\\build_cmake\\CMakeFiles\\CMakeScratch\\TryCompile-s6skxv\\src.cxx
         C:\\Program Files\\Amazon Corretto\\jdk21.0.4_7\\include\\jni.h(45): fatal error C1083: Impossible d'ouvrir le fichier include : 'jni_md.h' : No such file or directory
         ninja: build stopped: subcommand failed.
         
