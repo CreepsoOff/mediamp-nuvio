@@ -12,9 +12,12 @@ import androidx.compose.ui.geometry.Size
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.openani.mediamp.AbstractMediampPlayer
+import org.openani.mediamp.InternalForInheritanceMediampApi
 import org.openani.mediamp.InternalMediampApi
 import org.openani.mediamp.PlaybackState
+import org.openani.mediamp.features.PlaybackSpeed
 import org.openani.mediamp.features.PlayerFeatures
 import org.openani.mediamp.features.buildPlayerFeatures
 import org.openani.mediamp.internal.Platform
@@ -97,6 +100,11 @@ abstract class JvmMpvMediampPlayer(
         }
 
         override fun onPropertyChange(name: String, value: Double) {
+            when (name) {
+                "speed" -> {
+                    (features[PlaybackSpeed] as? MpvPlaybackSpeed)?._speedFlow.value = value.toFloat()
+                }
+            }
         }
 
         override fun onPropertyChange(name: String, value: String) {
@@ -111,13 +119,27 @@ abstract class JvmMpvMediampPlayer(
 
     override val impl: Any get() = handle
 
-    private val _currentPositionMillis: MutableStateFlow<Long> = MutableStateFlow(0L)
+    protected val _currentPositionMillis: MutableStateFlow<Long> = MutableStateFlow(0L)
     override val currentPositionMillis: StateFlow<Long> = _currentPositionMillis
 
     private val _mediaProperties: MutableStateFlow<MediaProperties?> = MutableStateFlow(null)
     override val mediaProperties: StateFlow<MediaProperties?> = _mediaProperties
 
-    override val features: PlayerFeatures = buildPlayerFeatures { }
+    override val features: PlayerFeatures = buildPlayerFeatures {
+        add(PlaybackSpeed, MpvPlaybackSpeed())
+    }
+
+    @OptIn(InternalForInheritanceMediampApi::class)
+    private inner class MpvPlaybackSpeed : PlaybackSpeed {
+        private val _speedFlow = MutableStateFlow(1.0f)
+        override val valueFlow = _speedFlow.asStateFlow()
+        override val value: Float get() = _speedFlow.value
+
+        override fun set(speed: Float) {
+            handle.setPropertyDouble("speed", speed.toDouble())
+            _speedFlow.value = speed
+        }
+    }
 
     override fun getCurrentMediaProperties(): MediaProperties? {
         return mediaProperties.value
@@ -230,7 +252,7 @@ abstract class JvmMpvMediampPlayer(
 
 
         handle.option("hwdec", "auto")
-        handle.option("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
+        handle.option("hwdec-codecs", "h264,mpeg4,mpeg2video,vp8,vp9,av1")  // hevc excluded on Windows: GPU/driver OpenGL FBO corruption
         // handle.option("tls-verify", "yes")
         // handle.option("tls-ca-file", "${this.context.filesDir.path}/cacert.pem")
         handle.option("input-default-bindings", "yes")
@@ -256,7 +278,7 @@ abstract class JvmMpvMediampPlayer(
         handle.observeProperty("duration/full", MPVFormat.MPV_FORMAT_INT64)
         handle.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
         handle.observeProperty("paused-for-cache", MPVFormat.MPV_FORMAT_FLAG)
-        handle.observeProperty("speed", MPVFormat.MPV_FORMAT_STRING) // todo
+        handle.observeProperty("speed", MPVFormat.MPV_FORMAT_DOUBLE)
 
         handle.observeProperty("media-title", MPVFormat.MPV_FORMAT_STRING) // to
         handle.observeProperty("metadata", MPVFormat.MPV_FORMAT_NONE)

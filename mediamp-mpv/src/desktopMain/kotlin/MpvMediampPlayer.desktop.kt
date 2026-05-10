@@ -26,6 +26,10 @@ actual class MpvMediampPlayer(
         backendTexture = null
     }
 
+    fun setCurrentPositionMillis(ms: Long) {
+        _currentPositionMillis.value = ms
+    }
+
     companion object {
         internal const val GL_TEXTURE_2D = 0x0DE1
         internal const val GL_RGBA8 = 0x8058
