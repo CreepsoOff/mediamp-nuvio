@@ -1,0 +1,3 @@
+F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/mediampv.dir
+F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/edit_cache.dir
+F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake/CMakeFiles/rebuild_cache.dir

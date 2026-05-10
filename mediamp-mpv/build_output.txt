@@ -1,0 +1,26 @@
+**********************************************************************
+** Visual Studio 2026 Developer Command Prompt v18.4.3
+** Copyright (c) 2026 Microsoft Corporation
+**********************************************************************
+-- The CXX compiler identification is MSVC 19.50.35728.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- MSVC detected
+-- Found JNI: C:/Program Files/Amazon Corretto/jdk21.0.4_7/include  found components: AWT JVM
+-- MPV library path: F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/libmpv/lib/windows/x86_64
+-- MPV library name: libmpv-2.lib
+-- Configuring done (2.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: F:/Desktop/mnt/NuvioMobile/mediamp/mediamp-mpv/build_cmake
+[1/7] Building CXX object CMakeFiles\mediampv.dir\src\cpp\main.cpp.obj
+[2/7] Building CXX object CMakeFiles\mediampv.dir\src\cpp\compatible_thread.cpp.obj
+[3/7] Building CXX object CMakeFiles\mediampv.dir\src\cpp\method_cache.cpp.obj
+[4/7] Building CXX object CMakeFiles\mediampv.dir\src\cpp\event_listener.cpp.obj
+[5/7] Building CXX object CMakeFiles\mediampv.dir\src\cpp\jni.cpp.obj
+[6/7] Building CXX object CMakeFiles\mediampv.dir\src\cpp\mpv_handle_t.cpp.obj
+[7/7] Linking CXX shared library mediampv.dll
+Copying dynamic library files...
+BUILD COMPLETE
