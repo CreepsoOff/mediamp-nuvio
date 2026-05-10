@@ -56,6 +56,10 @@ class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
         )
     }
 
+    fun resetGLAll() {
+        directContext.resetGL()
+    }
+
     fun resetContextGLAfterTextureRecreate() {
         directContext.resetGL(
             GLBackendState.RENDER_TARGET,

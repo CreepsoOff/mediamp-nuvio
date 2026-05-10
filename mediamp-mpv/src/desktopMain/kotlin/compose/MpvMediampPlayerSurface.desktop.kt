@@ -35,7 +35,6 @@ import org.openani.mediamp.InternalMediampApi
 import org.openani.mediamp.mpv.MpvMediampPlayer
 import org.openani.mediamp.mpv.utils.OpenGLComponentProvider
 import org.openani.mediamp.mpv.utils.findSkiaLayer
-import kotlin.time.measureTime
 
 @OptIn(InternalMediampApi::class)
 @Composable
@@ -62,14 +61,22 @@ actual fun MpvMediampPlayerSurface(
     DisposableEffect(components) {
         if (components == null) return@DisposableEffect onDispose { }
 
-        renderContextInitialized = player.createRenderContext(components.glDevice, components.glContext)
+        runCatching { components.directContext.resetGLAll() }
+
+        runCatching { player.createRenderContext(components.glDevice, components.glContext) }
+            .onSuccess { renderContextInitialized = true }
+            .onFailure { renderContextInitialized = false }
 
         onDispose {
-            player.releaseSkiaTextureAndImage()
+            player.image?.close()
+            player.image = null
+            player.backendTexture?.close()
+            player.backendTexture = null
             player.releaseTexture()
             player.releaseRenderContext()
-            textureId = 0
+            runCatching { components.directContext.resetGLAll() }
             renderContextInitialized = false
+            textureId = 0
         }
     }
 
@@ -81,37 +88,87 @@ actual fun MpvMediampPlayerSurface(
             if (!renderContextInitialized || components == null) return@Canvas
             val skiaCanvas = drawContext.canvas.nativeCanvas
 
-            if (player.currentSize == null || player.currentSize != size || textureId == 0) {
-                player.releaseSkiaTextureAndImage()
-                player.releaseTexture()
+            val sizeChanged = player.currentSize != null && player.currentSize != size
 
-                textureId = player.createTexture(size.width.toInt(), size.height.toInt())
-                components.resetContextGLAfterMpvRender()
-
-                if (textureId != 0) {
-                    val backendTexture = BackendTexture.makeGL(
-                        width = size.width.toInt(),
-                        height = size.height.toInt(),
-                        isMipmapped = false,
-                        textureId = textureId,
-                        textureTarget = MpvMediampPlayer.GL_TEXTURE_2D,
-                        textureFormat = MpvMediampPlayer.GL_RGBA8,
-                    ).also { player.backendTexture = it }
-
-                    player.image = Image.adoptTextureFrom(
-                        context = components.directContext,
-                        backendTexture = backendTexture,
-                        origin = SurfaceOrigin.TOP_LEFT,
-                        colorType = ColorType.RGBA_8888,
-                    )
+            if (player.currentSize == null || sizeChanged || textureId == 0) {
+                val targetWidth = size.width.toInt()
+                val targetHeight = size.height.toInt()
+                if (targetWidth <= 0 || targetHeight <= 0) {
+                    player.currentSize = null
+                    return@Canvas
                 }
 
-                player.currentSize = size
+                // Recreate the mpv render context on resize — the context
+                // holds internal FBO state that becomes stale after the FBO
+                // dimensions change. Failing to recreate causes blank video.
+                if (sizeChanged) {
+                    runCatching { player.releaseRenderContext() }
+                    runCatching { components.directContext.resetGLAll() }
+                    val recreated = runCatching {
+                        player.createRenderContext(components.glDevice, components.glContext)
+                    }.getOrElse { false }
+                    renderContextInitialized = recreated
+                    if (!recreated) {
+                        textureId = 0
+                        player.currentSize = null
+                        return@Canvas
+                    }
+                }
+
+                runCatching { player.releaseTexture() }
+
+                player.image?.close()
+                player.image = null
+                player.backendTexture?.close()
+                player.backendTexture = null
+
+                runCatching { components.directContext.resetGLAll() }
+
+                textureId = 0
+                val newTextureId = player.createTexture(targetWidth, targetHeight)
+
+                if (newTextureId != 0) {
+                    val backendTexture = runCatching {
+                        BackendTexture.makeGL(
+                            width = targetWidth,
+                            height = targetHeight,
+                            isMipmapped = false,
+                            textureId = newTextureId,
+                            textureTarget = MpvMediampPlayer.GL_TEXTURE_2D,
+                            textureFormat = MpvMediampPlayer.GL_RGBA8,
+                        )
+                    }.getOrNull()
+                    if (backendTexture == null) {
+                        player.currentSize = null
+                        textureId = 0
+                    } else {
+                        player.backendTexture = backendTexture
+                        val adoptedImage = runCatching {
+                            Image.adoptTextureFrom(
+                                context = components.directContext,
+                                backendTexture = backendTexture,
+                                origin = SurfaceOrigin.TOP_LEFT,
+                                colorType = ColorType.RGBA_8888,
+                            )
+                        }.getOrNull()
+                        player.image = adoptedImage
+                        if (adoptedImage == null) {
+                            textureId = 0
+                            player.currentSize = null
+                        } else {
+                            textureId = newTextureId
+                            player.currentSize = size
+                        }
+                    }
+                } else {
+                    player.currentSize = null
+                }
             }
 
             if (textureId != 0) {
-                measureTime { player.renderFrame() }
-                components.resetContextGLAfterMpvRender()
+                val renderOk = runCatching { player.renderFrame() }.getOrDefault(false)
+                if (!renderOk) return@Canvas
+                runCatching { components.directContext.resetGLAll() }
             }
             player.image?.let {
                 skiaCanvas.drawImage(it, 0f, 0f)
