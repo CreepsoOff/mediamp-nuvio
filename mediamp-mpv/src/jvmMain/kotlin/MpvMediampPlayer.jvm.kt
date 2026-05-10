@@ -102,7 +102,7 @@ abstract class JvmMpvMediampPlayer(
         override fun onPropertyChange(name: String, value: Double) {
             when (name) {
                 "speed" -> {
-                    (features[PlaybackSpeed] as? MpvPlaybackSpeed)?._speedFlow.value = value.toFloat()
+                    (features[PlaybackSpeed] as? MpvPlaybackSpeed)?._speedFlow?.value = value.toFloat()
                 }
             }
         }
@@ -131,7 +131,7 @@ abstract class JvmMpvMediampPlayer(
 
     @OptIn(InternalForInheritanceMediampApi::class)
     private inner class MpvPlaybackSpeed : PlaybackSpeed {
-        private val _speedFlow = MutableStateFlow(1.0f)
+        internal val _speedFlow = MutableStateFlow(1.0f)
         override val valueFlow = _speedFlow.asStateFlow()
         override val value: Float get() = _speedFlow.value
 
