@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2024-2026 OpenAni and contributors.
  *
  * Use of this source code is governed by the Apache License version 2 license, which can be found at the following link.
@@ -37,7 +37,7 @@ class MPVHandle private constructor(ptr: Long) : AutoCloseable {
 
     internal fun setRenderUpdateListener(listener: RenderUpdateListener?): Boolean {
         renderUpdateListener = listener
-        return nSetRenderUpdateListener(ptr, listener)
+        return try { nSetRenderUpdateListener(ptr, listener) } catch (_: UnsatisfiedLinkError) { false }
     }
 
     fun command(vararg command: String): Boolean {
@@ -89,14 +89,14 @@ class MPVHandle private constructor(ptr: Long) : AutoCloseable {
     }
 
     fun registerSeekableInput(input: SeekableInput, uri: String): String {
-        if (!nRegisterSeekableInput(ptr, input, uri, input.size)) {
+        if (!(try { nRegisterSeekableInput(ptr, input, uri, input.size) } catch (_: UnsatisfiedLinkError) { false })) {
             error("Failed to register SeekableInput for mpv stream_cb: $uri")
         }
         return uri
     }
 
     fun unregisterSeekableInput(uri: String): Boolean {
-        return nUnregisterSeekableInput(ptr, uri)
+        return try { nUnregisterSeekableInput(ptr, uri) } catch (_: UnsatisfiedLinkError) { false }
     }
 
     /**

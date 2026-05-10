@@ -11,18 +11,18 @@ package org.openani.mediamp.mpv.compose
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.window.LocalWindow
 import org.jetbrains.skia.BackendTexture
@@ -50,16 +50,20 @@ actual fun MpvMediampPlayerSurface(
 
     var textureId by remember { mutableIntStateOf(0) }
     var renderContextInitialized by remember { mutableStateOf(false) }
-    val interpolator = remember { FrameInterpolator() }
-    
-    var renderTimeDelta by remember { mutableLongStateOf(0L) }
+    var frameCount by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            withFrameNanos { frameCount = it }
+        }
+    }
 
     DisposableEffect(components) {
         if (components == null) return@DisposableEffect onDispose { }
 
         renderContextInitialized = player.createRenderContext(components.glDevice, components.glContext)
         if (renderContextInitialized) {
-            player.setRenderUpdateListener(interpolator)
+            player.setRenderUpdateListener(null)
         }
 
         onDispose {
@@ -74,7 +78,8 @@ actual fun MpvMediampPlayerSurface(
 
     Box(modifier = modifier) {
         Canvas(Modifier.matchParentSize()) {
-            interpolator.updateSubscription
+            @Suppress("UNUSED_EXPRESSION")
+            frameCount
 
             if (!renderContextInitialized || components == null) return@Canvas
             val skiaCanvas = drawContext.canvas.nativeCanvas
@@ -108,17 +113,12 @@ actual fun MpvMediampPlayerSurface(
             }
 
             if (textureId != 0) {
-                renderTimeDelta = measureTime { player.renderFrame() }.inWholeMilliseconds
+                measureTime { player.renderFrame() }
                 components.resetContextGLAfterMpvRender()
             }
             player.image?.let {
                 skiaCanvas.drawImage(it, 0f, 0f)
             }
         }
-
-        Text(
-            "renderTimeDelta: $renderTimeDelta", 
-            color = Color.Red,
-        )
     }
 }

@@ -60,6 +60,8 @@ class OpenGLComponentProvider(skiaLayer: SkiaLayer) {
         directContext.resetGL(
             GLBackendState.RENDER_TARGET,
             GLBackendState.TEXTURE_BINDING,
+            GLBackendState.VIEW,
+            GLBackendState.VERTEX,
             GLBackendState.PIXEL_STORE,
             GLBackendState.MISC,
         )

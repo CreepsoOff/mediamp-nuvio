@@ -97,6 +97,14 @@ abstract class JvmMpvMediampPlayer(
                 "duration/full" -> _mediaProperties.value =
                     if (mediaProperties.value == null) MediaProperties(null, value * 1000)
                     else mediaProperties.value?.copy(durationMillis = value * 1000)
+                "video-params/w" -> {
+                    if (value > 0) {
+                        voConfigured = true
+                        videoReconfigFlow.tryEmit(Unit)
+                    } else {
+                        voConfigured = false
+                    }
+                }
             }
         }
 
@@ -305,6 +313,7 @@ abstract class JvmMpvMediampPlayer(
         handle.observeProperty("pause", MPVFormat.MPV_FORMAT_FLAG)
         handle.observeProperty("paused-for-cache", MPVFormat.MPV_FORMAT_FLAG)
         handle.observeProperty("speed", MPVFormat.MPV_FORMAT_DOUBLE)
+        handle.observeProperty("video-params/w", MPVFormat.MPV_FORMAT_INT64)
 
         handle.observeProperty("media-title", MPVFormat.MPV_FORMAT_STRING) // to
         handle.observeProperty("metadata", MPVFormat.MPV_FORMAT_NONE)
