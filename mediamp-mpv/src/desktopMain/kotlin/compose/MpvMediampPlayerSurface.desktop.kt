@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2024-2026 OpenAni and contributors.
  *
  * Use of this source code is governed by the Apache License version 2 license, which can be found at the following link.
@@ -89,7 +89,7 @@ actual fun MpvMediampPlayerSurface(
                 player.releaseTexture()
 
                 textureId = player.createTexture(size.width.toInt(), size.height.toInt())
-                components.resetContextGLAfterTextureRecreate()
+                components.resetContextGLAfterMpvRender()
 
                 if (textureId != 0) {
                     val backendTexture = BackendTexture.makeGL(
