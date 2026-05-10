@@ -153,6 +153,10 @@ actual fun MpvMediampPlayerSurface(
 
         // Render mpv frame into FBO and draw to Compose canvas
         if (textureId != 0) {
+            // Reset Skia state before mpv touches GL context (prevents state conflict)
+            // Don't reset after — that would make Skia abandon its render target,
+            // causing drawImage() to render into the FBO instead of the screen.
+            runCatching { components.directContext.resetGLAll() }
             player.renderFrame()
         }
 
