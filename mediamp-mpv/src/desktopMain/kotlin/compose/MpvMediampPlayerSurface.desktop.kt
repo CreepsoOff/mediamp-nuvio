@@ -16,8 +16,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
@@ -46,9 +46,10 @@ actual fun MpvMediampPlayerSurface(
 
     var textureId by remember { mutableIntStateOf(0) }
     var renderContextInitialized by remember { mutableStateOf(false) }
-    var lastContextSignature by remember { mutableStateOf<String?>(null) }
+    var lastTextureSize by remember { mutableStateOf<androidx.compose.ui.unit.IntSize?>(null) }
     var frameCount by remember { mutableLongStateOf(0L) }
 
+    // Rendering loop: ~60fps, independent of Compose frame scheduling
     LaunchedEffect(Unit) {
         while (true) {
             frameCount++
@@ -56,16 +57,13 @@ actual fun MpvMediampPlayerSurface(
         }
     }
 
-    DisposableEffect(components, player) {
+    // Initialize/destroy mpv render context (once per components lifecycle)
+    DisposableEffect(components) {
         if (components == null) return@DisposableEffect onDispose { }
 
         runCatching { components.directContext.resetGLAll() }
-
         runCatching { player.createRenderContext(components.glDevice, components.glContext) }
-            .onSuccess {
-                lastContextSignature = components.contextSignature
-                renderContextInitialized = true
-            }
+            .onSuccess { renderContextInitialized = true }
             .onFailure { renderContextInitialized = false }
 
         onDispose {
@@ -73,12 +71,12 @@ actual fun MpvMediampPlayerSurface(
             player.image = null
             player.backendTexture?.close()
             player.backendTexture = null
-            player.releaseTexture()
-            player.releaseRenderContext()
+            runCatching { player.releaseTexture() }
+            runCatching { player.releaseRenderContext() }
             runCatching { components.directContext.resetGLAll() }
             renderContextInitialized = false
-            lastContextSignature = null
             textureId = 0
+            lastTextureSize = null
         }
     }
 
@@ -87,95 +85,80 @@ actual fun MpvMediampPlayerSurface(
         frameCount
 
         if (!renderContextInitialized || components == null) return@Canvas
+
         val skiaCanvas = drawContext.canvas.nativeCanvas
-        val currentContextSignature = components.contextSignature
+        val targetWidth = size.width.toInt().coerceAtLeast(1)
+        val targetHeight = size.height.toInt().coerceAtLeast(1)
+        val currentSize = androidx.compose.ui.unit.IntSize(targetWidth, targetHeight)
 
-        if (lastContextSignature != null && lastContextSignature != currentContextSignature) {
-            runCatching { components.directContext.resetGLAll() }
-            runCatching { player.createRenderContext(components.glDevice, components.glContext) }
-                .onSuccess { renderContextInitialized = true }
-                .onFailure { renderContextInitialized = false }
-        }
-        lastContextSignature = currentContextSignature
-
-        val sizeChanged = player.currentSize != null && player.currentSize != size
-        if (player.currentSize == null || sizeChanged || textureId == 0) {
-            val targetWidth = size.width.toInt()
-            val targetHeight = size.height.toInt()
-            if (targetWidth <= 0 || targetHeight <= 0) {
-                player.currentSize = null
-                return@Canvas
-            }
-
-            if (sizeChanged) {
-                runCatching { player.releaseRenderContext() }
-                runCatching { components.directContext.resetGLAll() }
-                val recreated = runCatching {
-                    player.createRenderContext(components.glDevice, components.glContext)
-                }.getOrElse { false }
-                renderContextInitialized = recreated
-                if (!recreated) {
-                    textureId = 0
-                    player.currentSize = null
-                    return@Canvas
-                }
-            }
-
-            runCatching { player.releaseTexture() }
-
+        // Recreate FBO/texture only when size changes or no valid texture
+        val sizeChanged = lastTextureSize != null && lastTextureSize != currentSize
+        if (lastTextureSize == null || sizeChanged || textureId == 0) {
+            // Release old Skia objects
             player.image?.close()
             player.image = null
             player.backendTexture?.close()
             player.backendTexture = null
 
-            runCatching { components.directContext.resetGLAll() }
+            // Release old FBO (keeps GL texture alive for Skia to clean up)
+            runCatching { player.releaseTexture() }
 
-            textureId = 0
+            // Create new FBO with current size
             val newTextureId = player.createTexture(targetWidth, targetHeight)
+            if (newTextureId == 0) {
+                textureId = 0
+                lastTextureSize = null
+                return@Canvas
+            }
 
-            if (newTextureId != 0) {
-                val backendTexture = runCatching {
-                    BackendTexture.makeGL(
-                        width = targetWidth,
-                        height = targetHeight,
-                        isMipmapped = false,
-                        textureId = newTextureId,
-                        textureTarget = MpvMediampPlayer.GL_TEXTURE_2D,
-                        textureFormat = MpvMediampPlayer.GL_RGBA8,
-                    )
-                }.getOrNull()
-                if (backendTexture == null) {
-                    player.currentSize = null
-                    textureId = 0
-                } else {
-                    player.backendTexture = backendTexture
-                    val adoptedImage = runCatching {
-                        Image.adoptTextureFrom(
-                            context = components.directContext,
-                            backendTexture = backendTexture,
-                            origin = SurfaceOrigin.TOP_LEFT,
-                            colorType = ColorType.RGBA_8888,
-                        )
-                    }.getOrNull()
-                    player.image = adoptedImage
-                    if (adoptedImage == null) {
-                        textureId = 0
-                        player.currentSize = null
-                    } else {
-                        textureId = newTextureId
-                        player.currentSize = size
-                    }
-                }
-            } else {
-                player.currentSize = null
+            // Wrap GL texture in Skia objects for Compose rendering
+            val backendTexture = runCatching {
+                BackendTexture.makeGL(
+                    width = targetWidth,
+                    height = targetHeight,
+                    isMipmapped = false,
+                    textureId = newTextureId,
+                    textureTarget = MpvMediampPlayer.GL_TEXTURE_2D,
+                    textureFormat = MpvMediampPlayer.GL_RGBA8,
+                )
+            }.getOrNull()
+
+            if (backendTexture == null) {
+                textureId = 0
+                lastTextureSize = null
+                return@Canvas
+            }
+
+            player.backendTexture = backendTexture
+
+            val adoptedImage = runCatching {
+                Image.adoptTextureFrom(
+                    context = components.directContext,
+                    backendTexture = backendTexture,
+                    origin = SurfaceOrigin.TOP_LEFT,
+                    colorType = ColorType.RGBA_8888,
+                )
+            }.getOrNull()
+
+            if (adoptedImage == null) {
+                textureId = 0
+                lastTextureSize = null
+                return@Canvas
+            }
+
+            player.image = adoptedImage
+            textureId = newTextureId
+            lastTextureSize = currentSize
+        }
+
+        // Render mpv frame into FBO and draw to Compose canvas
+        if (textureId != 0) {
+            val renderOk = runCatching { player.renderFrame() }.getOrDefault(false)
+            if (renderOk) {
+                runCatching { components.directContext.resetGLAll() }
             }
         }
 
-        if (textureId != 0) {
-            val renderOk = runCatching { player.renderFrame() }.getOrDefault(false)
-            if (!renderOk) return@Canvas
-            runCatching { components.directContext.resetGLAll() }
-        }
         player.image?.let {
             skiaCanvas.drawImage(it, 0f, 0f)
         }
