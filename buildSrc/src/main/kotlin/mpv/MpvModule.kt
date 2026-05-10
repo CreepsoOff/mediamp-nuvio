@@ -10,5 +10,12 @@ fun Project.configureMediampMpvModule() {
     val desktopRuntimeJarTasks = registerDesktopRuntimeJarTasks(context)
     val prepareTask = registerMpvAndroidJniPackaging(context)
     wireMpvAndroidJniPackaging(context, prepareTask)
-    configureRuntimePublishing(context, desktopRuntimeJarTasks)
+    // configureRuntimePublishing disabled for composite build — creates variant ambiguity
+    // with Kotlin Multiplatform desktopRuntimeElements
+    if (!isCompositeBuild()) {
+        configureRuntimePublishing(context, desktopRuntimeJarTasks)
+    }
 }
+
+private fun Project.isCompositeBuild(): Boolean =
+    gradle.parent != null

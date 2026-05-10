@@ -213,9 +213,11 @@ void *(mpv_handle_t::event_loop)(void *arg) {
             case MPV_EVENT_END_FILE:
                 emit_end_file(env, event_listener_, (mpv_event_end_file *)event->data);
                 break;
+#ifdef MPV_EVENT_TRACKS_CHANGED
             case MPV_EVENT_TRACKS_CHANGED:
                 emit_tracks_changed(env, event_listener_);
                 break;
+#endif
             case MPV_EVENT_PROPERTY_CHANGE:
                 event_property = (mpv_event_property *) event->data;
                 emit_property_change(env, event_property, event_listener_);

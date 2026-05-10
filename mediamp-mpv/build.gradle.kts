@@ -49,7 +49,7 @@ kotlin {
     }
 }
 
-// configureMediampMpvModule()  // Disabled: variant ambiguity in composite build with parent
+configureMediampMpvModule()
 
 val hostMpvTargetName = when (getOs()) {
     Os.Windows -> "WindowsX64"
