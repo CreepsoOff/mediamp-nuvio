@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2024-2026 OpenAni and contributors.
  *
  * Use of this source code is governed by the Apache License version 2 license, which can be found at the following link.
@@ -20,11 +20,11 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.window.LocalWindow
+import kotlinx.coroutines.delay
 import org.jetbrains.skia.BackendTexture
 import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.DirectContext
@@ -54,7 +54,8 @@ actual fun MpvMediampPlayerSurface(
 
     LaunchedEffect(Unit) {
         while (true) {
-            withFrameNanos { frameCount = it }
+            frameCount++
+            delay(16L)
         }
     }
 
@@ -62,12 +63,8 @@ actual fun MpvMediampPlayerSurface(
         if (components == null) return@DisposableEffect onDispose { }
 
         renderContextInitialized = player.createRenderContext(components.glDevice, components.glContext)
-        if (renderContextInitialized) {
-            player.setRenderUpdateListener(null)
-        }
 
         onDispose {
-            player.setRenderUpdateListener(null)
             player.releaseSkiaTextureAndImage()
             player.releaseTexture()
             player.releaseRenderContext()
