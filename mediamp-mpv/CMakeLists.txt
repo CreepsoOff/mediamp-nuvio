@@ -143,3 +143,39 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 message(STATUS "MPV library path: ${MPV_LIB_PATH}")
 message(STATUS "MPV library name: ${MPV_LIB_NAME}")
+
+# ----------------------------------------------------------------------------
+# NuvioImageBridge: Windows-only image decoder DLL.
+#
+# Decodes still images via the Windows Imaging Component (WIC), bypassing
+# Skia/Coil for the resampling step. Used by the JVM-side WIC Coil decoder
+# in `composeApp/src/desktopMain/.../core/imaging/`.
+#
+# Built into the same `build-ci/` directory as `mediampv.dll` so the
+# existing Gradle staging logic (`packageWindowsNativeRuntime`) picks it
+# up via its `*.dll` glob and the dev `gradle run` finds it on
+# `java.library.path` without any extra wiring.
+# ----------------------------------------------------------------------------
+
+if(WIN32)
+    add_library(NuvioImageBridge SHARED
+        "${SRC_PREFIX}/nuvio_image_bridge.cpp"
+    )
+    target_include_directories(NuvioImageBridge PRIVATE "${SRC_PREFIX}/include")
+    set_property(TARGET NuvioImageBridge PROPERTY CXX_STANDARD 20)
+    set_property(TARGET NuvioImageBridge PROPERTY CXX_STANDARD_REQUIRED ON)
+
+    if (MSVC)
+        target_compile_options(NuvioImageBridge PRIVATE /W3 /Zc:__cplusplus)
+        # Match the static MSVC runtime the rest of the project uses so the
+        # produced DLL has the same VC redistributable footprint.
+        set_property(TARGET NuvioImageBridge PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
+    endif()
+
+    # WIC lives in windowscodecs; ole32 brings the COM helpers it relies on.
+    target_link_libraries(NuvioImageBridge PRIVATE
+        windowscodecs
+        ole32
+        oleaut32
+    )
+endif()
